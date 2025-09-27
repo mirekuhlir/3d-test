@@ -2,6 +2,8 @@
 // ------------------
 // Responsibility: Create UI overlays layered over the canvas — a pointer-lock
 // prompt, a crosshair that shows only while locked, and a lightweight FPS meter.
+import { CROUCH_TOGGLE } from './constants.js';
+
 export function createPointerLockOverlay(controls, isDevModeActive = () => false) {
   const overlay = document.createElement('div');
   overlay.style.position = 'absolute';
@@ -16,10 +18,11 @@ export function createPointerLockOverlay(controls, isDevModeActive = () => false
   overlay.style.color = '#e6edf3';
   overlay.style.fontFamily = 'system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif';
   overlay.style.userSelect = 'none';
+  const crouchModeLabel = CROUCH_TOGGLE ? 'toggle' : 'hold';
   overlay.innerHTML = `
     <div style="text-align:center">
       <div style="font-size:22px; font-weight:600; margin-bottom:6px;">Click to control with mouse</div>
-      <div style="opacity:0.85;">WASD: move • Space: jump • Ctrl/C: crouch</div>
+      <div style="opacity:0.85;">WASD: move • Space: jump • Ctrl/C: crouch (${crouchModeLabel})</div>
     </div>
   `;
   overlay.style.cursor = 'pointer';

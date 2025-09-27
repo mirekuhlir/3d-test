@@ -17,3 +17,7 @@ export const STEP_MAX_HEIGHT = 0.35;
 // Ground tolerance configuration for collision handling
 // These values help prevent minor sticking on the ground during horizontal checks.
 export const DEFAULT_GROUND_TOLERANCE = 0.025;
+
+// Input behavior
+// When true, crouch acts as toggle (press once to crouch/stand) instead of hold-to-crouch
+export const CROUCH_TOGGLE = true;

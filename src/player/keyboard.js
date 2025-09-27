@@ -3,6 +3,8 @@
 // Responsibility: Translate keydown/keyup events into state flags used by the
 // player update loop (WASD movement, jumping, crouching). Also snapshots
 // directional input at jump start to drive air-control behavior.
+import { CROUCH_TOGGLE } from './constants.js';
+
 export function setupKeyboardInput(state) {
   function onKeyDown(event) {
     switch (event.code) {
@@ -39,7 +41,13 @@ export function setupKeyboardInput(state) {
       case 'ControlLeft':
       case 'ControlRight':
       case 'KeyC':
-        state.isCrouching = true;
+        if (CROUCH_TOGGLE) {
+          if (!event.repeat) {
+            state.isCrouching = !state.isCrouching;
+          }
+        } else {
+          state.isCrouching = true;
+        }
         break;
     }
   }
@@ -65,7 +73,9 @@ export function setupKeyboardInput(state) {
       case 'ControlLeft':
       case 'ControlRight':
       case 'KeyC':
-        state.isCrouching = false;
+        if (!CROUCH_TOGGLE) {
+          state.isCrouching = false;
+        }
         break;
     }
   }
