@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
+import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 
 export function addEnvironment(scene) {
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.35);
@@ -78,4 +80,42 @@ export function addEnvironment(scene) {
     { x: 12.8, z: 1.4, topY: 2.7, width: 1.8, depth: 1.6 },
   ];
   route2.forEach(step => createPlatform({ ...step, color: altColor }));
+
+  // 3D text in the scene
+  const fontLoader = new FontLoader();
+  const fontUrl = 'https://unpkg.com/three@0.166.1/examples/fonts/helvetiker_regular.typeface.json';
+
+  fontLoader.load(
+    fontUrl,
+    (font) => {
+      const textGeometry = new TextGeometry('3D TEST', {
+        font,
+        size: 1.2,
+        height: 0.3,
+        curveSegments: 12,
+        bevelEnabled: true,
+        bevelThickness: 0.03,
+        bevelSize: 0.02,
+        bevelOffset: 0,
+        bevelSegments: 2,
+      });
+
+      textGeometry.center();
+
+      const textMaterial = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        metalness: 0.25,
+        roughness: 0.45,
+      });
+
+      const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+      textMesh.position.set(0, 1.2, -6);
+      textMesh.receiveShadow = true;
+      scene.add(textMesh);
+    },
+    undefined,
+    (error) => {
+      console.error('Failed to load font for 3D text:', error);
+    }
+  );
 }
