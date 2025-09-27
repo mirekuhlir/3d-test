@@ -13,5 +13,5 @@ export const RENDER_SCALE = 1; // e.g. 0.5 for half-res
  * RENDER_SCALE for resolution control. Increase if you want sharper rendering
  * on retina displays while still being able to scale down via RENDER_SCALE.
  */
-export const MAX_DEVICE_PIXEL_RATIO = 1; // e.g. 2 to allow some HiDPI sharpness
+export const MAX_DEVICE_PIXEL_RATIO = 2; // e.g. 2 to allow some HiDPI sharpness
 

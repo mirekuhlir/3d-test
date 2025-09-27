@@ -18,7 +18,7 @@ export function createRenderer(canvas) {
   // Create a WebGLRenderer that draws into the provided canvas, with anti-aliasing
   // for smoother edges and an alpha channel to allow transparent backgrounds when
   // layering over other UI.
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: true });
 
   // Compute effective pixel ratio and size based on config
   const effectiveDPR = Math.min(window.devicePixelRatio, MAX_DEVICE_PIXEL_RATIO);
