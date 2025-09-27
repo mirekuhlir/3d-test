@@ -1,3 +1,4 @@
+import { STEP_MAX_HEIGHT } from './constants.js';
 /**
  * Updates player movement and collision per frame.
  *
@@ -34,8 +35,24 @@ export function updatePlayer({ state, controls, isCollidingAtPosition, delta }) 
     if (moveX !== 0) {
       controls.moveRight(moveX);
       if (isCollidingAtPosition(obj.position, targetHeight, state.radius, { ignoreGroundTriangles: true })) {
+        // Blocked: try to step up over a small ledge
         controls.moveRight(-moveX);
-        state.velocity.x = 0;
+        let stepped = false;
+        const stepIncrement = Math.min(0.03, STEP_MAX_HEIGHT);
+        for (let h = stepIncrement; h <= STEP_MAX_HEIGHT + 1e-6; h += stepIncrement) {
+          obj.position.y += h;
+          controls.moveRight(moveX);
+          const blocked = isCollidingAtPosition(obj.position, targetHeight, state.radius);
+          if (!blocked) {
+            stepped = true;
+            break;
+          }
+          controls.moveRight(-moveX);
+          obj.position.y -= h;
+        }
+        if (!stepped) {
+          state.velocity.x = 0;
+        }
       }
     }
     // Attempt horizontal movement on Z (forward/back)
@@ -43,8 +60,24 @@ export function updatePlayer({ state, controls, isCollidingAtPosition, delta }) 
     if (moveZ !== 0) {
       controls.moveForward(moveZ);
       if (isCollidingAtPosition(obj.position, targetHeight, state.radius, { ignoreGroundTriangles: true })) {
+        // Blocked: try to step up over a small ledge
         controls.moveForward(-moveZ);
-        state.velocity.z = 0;
+        let stepped = false;
+        const stepIncrement = Math.min(0.03, STEP_MAX_HEIGHT);
+        for (let h = stepIncrement; h <= STEP_MAX_HEIGHT + 1e-6; h += stepIncrement) {
+          obj.position.y += h;
+          controls.moveForward(moveZ);
+          const blocked = isCollidingAtPosition(obj.position, targetHeight, state.radius);
+          if (!blocked) {
+            stepped = true;
+            break;
+          }
+          controls.moveForward(-moveZ);
+          obj.position.y -= h;
+        }
+        if (!stepped) {
+          state.velocity.z = 0;
+        }
       }
     }
   }
