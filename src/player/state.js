@@ -10,8 +10,6 @@ import {
   MOVE_ACCEL,
   DAMPING,
   JUMP_SPEED,
-  COYOTE_TIME,
-  JUMP_BUFFER_TIME,
   PLAYER_RADIUS
 } from './constants.js';
 
