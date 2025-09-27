@@ -1,3 +1,8 @@
+// Application entry point
+// -----------------------
+// Responsibility: Initialize the renderer, show the main menu with a tiny
+// animated background, preload assets (models/textures) while updating a UI
+// progress bar, and start the gameplay scene on Play.
 import '../style.css';
 import { createRenderer } from '../core/renderer.js';
 import { createMenu } from './menu.js';
@@ -13,9 +18,11 @@ let loadedAssets = null;
 const menu = createMenu({
   renderer,
   onPlay: () => {
+    // Stop and remove the menu when the user starts the game
     menu.stop();
     menu.destroy();
 
+    // Spin up the game and pass any preloaded assets
     gameInstance = createGame({ renderer, assets: loadedAssets || {} });
     gameInstance.start();
   }
@@ -29,6 +36,7 @@ const textureModules = import.meta.glob('../assets/textures/**/*.{jpg,jpeg,png,w
 const modelModules = import.meta.glob('../assets/models/**/*.{glb,gltf}', { eager: true, as: 'url' });
 
 function toPlan(globResult) {
+  // Convert a map of path->url into { name, url } entries for the preloader
   return Object.entries(globResult).map(([path, url]) => {
     const name = path.split('/').pop().replace(/\.[^.]+$/, '');
     return { name, url };
@@ -40,6 +48,7 @@ const assetsPlan = {
   textures: toPlan(textureModules),
 };
 
+// Begin background preloading; update the menu bar
 preloadAssets(assetsPlan, (progress) => {
   menu.setProgress(progress);
 }).then((assets) => {

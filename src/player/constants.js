@@ -1,3 +1,7 @@
+// Player and physics constants
+// ----------------------------
+// Responsibility: Tunable parameters for movement feel and collision capsule.
+// Values are chosen for responsive FPS-style navigation.
 export const GRAVITY = 30; // units/s^2
 export const MOVE_ACCEL = 50; // acceleration when holding a movement key
 export const DAMPING = 10; // air/ground friction

@@ -1,8 +1,14 @@
+// Environment composition
+// -----------------------
+// Responsibility: Populate the scene with lights, a ground plane, helpers,
+// scattered decorative meshes, a simple parkour route (platforms), and a 3D
+// text label. The geometry is static and used by the collision system.
 import * as THREE from 'three';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 
 export function addEnvironment(scene) {
+  // Base lighting setup
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.35);
   scene.add(ambientLight);
 

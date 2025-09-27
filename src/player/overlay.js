@@ -1,3 +1,7 @@
+// Gameplay overlays
+// ------------------
+// Responsibility: Create UI overlays layered over the canvas — a pointer-lock
+// prompt, a crosshair that shows only while locked, and a lightweight FPS meter.
 export function createPointerLockOverlay(controls, isDevModeActive = () => false) {
   const overlay = document.createElement('div');
   overlay.style.position = 'absolute';

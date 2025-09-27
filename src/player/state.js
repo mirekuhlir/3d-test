@@ -1,3 +1,7 @@
+// Player state container
+// ----------------------
+// Responsibility: Hold gameplay input flags, physical parameters, and runtime
+// vectors used by the player update loop. This is a minimal mutable store.
 import * as THREE from 'three';
 import {
   PLAYER_NORMAL_HEIGHT,

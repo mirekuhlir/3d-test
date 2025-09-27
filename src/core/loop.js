@@ -12,6 +12,7 @@
  * - scene: THREE.Scene — the scene to render
  * - camera: THREE.Camera — the camera to render with
  * - update: (delta: number) => void — called every frame with delta time in seconds
+ * - getCamera?: () => THREE.Camera — optional camera source (e.g., dev mode)
  *
  * Returns:
  * - { start: () => void, stop: () => void }
@@ -29,9 +30,10 @@ export function createLoop({ renderer, scene, camera, getCamera, update }) {
   let rafId = null;
 
   function onFrame() {
-    // Delta in seconds; clamped to 0.05s (~20 FPS minimum) for physics/animation stability
+    // Delta in seconds; clamped to 0.05s (~20 FPS minimum) to avoid unstable
+    // physics or tunneling on slow frames.
     const delta = Math.min(clock.getDelta(), 0.05);
-    // User update logic before rendering
+    // User update logic before rendering (may mutate scene/camera)
     update(delta);
     // Render the current frame
     const activeCamera = typeof getCamera === 'function' ? getCamera() : camera;

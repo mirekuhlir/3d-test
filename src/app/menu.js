@@ -1,4 +1,8 @@
-// Lightweight main menu scene with DOM UI and a tiny 3D animation in the background.
+// Main menu scene
+// ---------------
+// Responsibility: Display a lightweight DOM-based main menu layered over a
+// minimal Three.js background animation. Shows preload progress, enables the
+// Play button when ready, and cleans up on exit.
 import * as THREE from 'three';
 import { createScene } from '../core/scene.js';
 import { createCamera } from '../player/camera.js';
@@ -6,6 +10,7 @@ import { createLoop } from '../core/loop.js';
 import { setupResize } from '../systems/resize.js';
 
 function createMenuOverlay(onPlay) {
+  // Root overlay container
   const root = document.createElement('div');
   root.style.position = 'absolute';
   root.style.inset = '0';
@@ -26,6 +31,7 @@ function createMenuOverlay(onPlay) {
   title.style.fontSize = '28px';
   title.style.fontWeight = '700';
 
+  // Progress bar + text status
   const progressWrap = document.createElement('div');
   progressWrap.style.width = '320px';
   progressWrap.style.height = '10px';
@@ -42,6 +48,7 @@ function createMenuOverlay(onPlay) {
   progressText.textContent = 'Loading… 0%';
   progressText.style.opacity = '0.9';
 
+  // Play action. Initially disabled until preloading finishes
   const playBtn = document.createElement('button');
   playBtn.textContent = 'Play';
   playBtn.style.padding = '10px 20px';
@@ -65,6 +72,7 @@ function createMenuOverlay(onPlay) {
 
   return {
     setProgress(p) {
+      // Clamp and apply percent width + label
       const pct = Math.round(Math.max(0, Math.min(1, p)) * 100);
       progressBar.style.width = `${pct}%`;
       progressText.textContent = pct >= 100 ? 'Ready' : `Loading… ${pct}%`;
@@ -80,11 +88,12 @@ function createMenuOverlay(onPlay) {
 }
 
 export function createMenu({ renderer, onPlay }) {
+  // Background 3D scene visible behind the overlay
   const scene = createScene();
   const camera = createCamera();
   camera.position.set(0, 1.4, 3);
 
-  // Simple background object animation
+  // Simple animated object to keep the menu lively
   const mat = new THREE.MeshStandardMaterial({ color: 0x6a5af9, metalness: 0.2, roughness: 0.5 });
   const geo = new THREE.TorusKnotGeometry(0.8, 0.25, 120, 16);
   const mesh = new THREE.Mesh(geo, mat);
@@ -94,6 +103,7 @@ export function createMenu({ renderer, onPlay }) {
   scene.add(dir);
   scene.add(mesh);
 
+  // Keep renderer/camera sized to the window while the menu is open
   const cleanupResize = setupResize({ renderer, camera });
 
   const ui = createMenuOverlay(onPlay);
@@ -103,6 +113,7 @@ export function createMenu({ renderer, onPlay }) {
     scene,
     camera,
     update: (delta) => {
+      // Gentle spin animation
       mesh.rotation.x += delta * 0.4;
       mesh.rotation.y += delta * 0.6;
     }
@@ -114,6 +125,7 @@ export function createMenu({ renderer, onPlay }) {
     setProgress: (p) => ui.setProgress(p),
     enablePlay: () => ui.enablePlay(),
     destroy: () => {
+      // Dispose both UI and 3D assets
       ui.destroy();
       cleanupResize();
       geo.dispose();

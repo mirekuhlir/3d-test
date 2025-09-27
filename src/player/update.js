@@ -1,3 +1,17 @@
+// Player update loop (movement + collision)
+// ----------------------------------------
+// Responsibility: Integrate physics, convert input into acceleration, and
+// resolve collisions using capsule-vs-scene checks. Supports step-up probing
+// and wall sliding using surface normals.
+//
+// API:
+// export function updatePlayer({
+//   state,                         // player state store (flags, velocities, params)
+//   controls,                      // PointerLockControls for movement
+//   isCollidingAtPosition,         // boolean collision test
+//   getCollisionAtPosition,        // collision test with surface normal
+//   delta                          // seconds since last frame
+// })
 import * as THREE from 'three';
 import { STEP_MAX_HEIGHT } from './constants.js';
 
@@ -31,8 +45,10 @@ export function updatePlayer({ state, controls, isCollidingAtPosition, getCollis
   state.direction.x = Number(state.moveRight) - Number(state.moveLeft);
   state.direction.normalize();
 
+  // Choose capsule height based on crouch
   const targetHeight = state.isCrouching ? state.crouchHeight : state.normalHeight;
   if (controls.isLocked) {
+    // Allow horizontal acceleration if grounded or air-control is enabled
     const allowAirAccel = state.canJump || state.airControlEnabled;
     if (allowAirAccel && state.direction.lengthSq() > 0) {
       state.velocity.z -= state.direction.z * state.moveAccel * delta;
@@ -44,6 +60,7 @@ export function updatePlayer({ state, controls, isCollidingAtPosition, getCollis
     const moveZ = -state.velocity.z * delta;
 
     if (moveX !== 0 || moveZ !== 0) {
+      // Step probing granularity: smaller = smoother but more collision queries
       const stepIncrement = Math.min(0.03, STEP_MAX_HEIGHT);
 
       const tryCombinedMove = () => {
@@ -99,7 +116,8 @@ export function updatePlayer({ state, controls, isCollidingAtPosition, getCollis
               const dispDotN = TMP_DISP.dot(TMP_N);
               TMP_SLIDE.copy(TMP_DISP).addScaledVector(TMP_N, -dispDotN);
 
-              // Ensure a minimum sliding amount even when nearly perpendicular
+              // Ensure a minimum sliding amount even when nearly perpendicular.
+              // Empirical: 0.35 keeps motion responsive near walls.
               const MIN_TANGENTIAL_RATIO = 0.35;
               const origLen = TMP_DISP.length();
               const slideLen = TMP_SLIDE.length();
@@ -184,21 +202,21 @@ export function updatePlayer({ state, controls, isCollidingAtPosition, getCollis
 
   // Vertical movement and floor/box collision
   const obj = controls.getObject();
-  const vyBefore = state.velocity.y;
+  const vyBefore = state.velocity.y; // remember sign to detect landing
   obj.position.y += state.velocity.y * delta;
   // Block vertical movement if colliding with boxes
   if (isCollidingAtPosition(obj.position, targetHeight, state.radius)) {
     obj.position.y -= state.velocity.y * delta;
     state.velocity.y = 0;
     if (vyBefore < 0) {
-      state.canJump = true;
+      state.canJump = true; // landed
       state.airControlEnabled = true;
     }
   }
   if (obj.position.y <= targetHeight) {
     state.velocity.y = 0;
     obj.position.y = targetHeight;
-    state.canJump = true;
+    state.canJump = true; // snap to ground if below floor
     state.airControlEnabled = true;
   }
 }

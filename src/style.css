@@ -1,3 +1,9 @@
+/*
+  App base styles
+  ---------------
+  Responsibility: Full-viewport canvas layout and a dark theme baseline used by
+  the overlays. Keeps the canvas (#app) stretched and removes default margins.
+*/
 html,
 body {
   height: 100%;

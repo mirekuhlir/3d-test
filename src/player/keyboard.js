@@ -1,3 +1,8 @@
+// Keyboard bindings for gameplay
+// ------------------------------
+// Responsibility: Translate keydown/keyup events into state flags used by the
+// player update loop (WASD movement, jumping, crouching). Also snapshots
+// directional input at jump start to drive air-control behavior.
 export function setupKeyboardInput(state) {
   function onKeyDown(event) {
     switch (event.code) {
@@ -65,6 +70,7 @@ export function setupKeyboardInput(state) {
     }
   }
 
+  // Attach listeners to the document; return a cleanup function for disposal
   document.addEventListener('keydown', onKeyDown);
   document.addEventListener('keyup', onKeyUp);
 

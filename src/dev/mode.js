@@ -5,6 +5,9 @@ import { createCamera } from '../player/camera.js';
 
 /**
  * Dev mode manager: encapsulates free-fly camera, debug UI and player capsule.
+ * Responsibility: Toggleable developer mode that swaps the active camera to a
+ * separate first-person controller, shows a floating debug panel, renders a
+ * wireframe capsule aligned with the player, and handles its own input.
  */
 export function createDevMode({
   renderer,
@@ -53,6 +56,7 @@ export function createDevMode({
   let capsuleMesh = null;
   function ensureCapsuleMesh() {
     if (capsuleMesh) return capsuleMesh;
+    // Build a simple wireframe capsule from primitives reflecting player height/radius
     const r = state.radius;
     const h = state.normalHeight - 2 * r;
     const top = new THREE.SphereGeometry(r, 16, 12);
@@ -128,13 +132,14 @@ export function createDevMode({
     if (e.code === 'KeyD' || e.code === 'ArrowRight') devMove.right = false;
   }
 
-  // Use capture: true for escape handler to have priority
+  // Use capture: true for escape handler to intercept before gameplay listeners
   window.addEventListener('keydown', onKeyDownDev, true);
   window.addEventListener('keydown', onKeyDownDevMove);
   window.addEventListener('keyup', onKeyUpDevMove);
   btnExitDev?.addEventListener('click', exit);
 
   function handleCanvasClick() {
+    // When active: clicking (re)locks the dev controls, otherwise gameplay controls
     if (isActive) {
       if (!devControls.isLocked) devControls.lock();
     } else {
@@ -144,6 +149,7 @@ export function createDevMode({
 
   function attachDevButton(overlayEl) {
     if (!overlayEl) return;
+    // Add a simple toggle button into the gameplay overlay
     const container = document.createElement('div');
     container.style.position = 'absolute';
     container.style.right = '12px';
@@ -169,7 +175,7 @@ export function createDevMode({
 
   function update(delta) {
     if (!isActive) return;
-    const speed = 8;
+    const speed = 8; // dev fly speed (units/s)
     const forwardAmt = (Number(devMove.fwd) - Number(devMove.back)) * speed * delta;
     const strafeAmt = (Number(devMove.right) - Number(devMove.left)) * speed * delta;
     const obj = devControls.getObject();
@@ -178,6 +184,7 @@ export function createDevMode({
     devCamera.getWorldDirection(forwardDir).normalize();
     if (forwardAmt) obj.position.addScaledVector(forwardDir, forwardAmt);
     if (strafeAmt) {
+      // Right vector = forward × up
       const rightDir = new THREE.Vector3().crossVectors(forwardDir, new THREE.Vector3(0, 1, 0)).normalize();
       obj.position.addScaledVector(rightDir, strafeAmt);
     }
@@ -190,6 +197,7 @@ export function createDevMode({
   }
 
   function dispose() {
+    // Clean up listeners and debug meshes
     window.removeEventListener('keydown', onKeyDownDev, true);
     window.removeEventListener('keydown', onKeyDownDevMove);
     window.removeEventListener('keyup', onKeyUpDevMove);
