@@ -5,7 +5,7 @@
 export const GRAVITY = 30; // units/s^2
 export const MOVE_ACCEL = 50; // acceleration when holding a movement key
 export const DAMPING = 10; // air/ground friction
-export const JUMP_SPEED = 12;
+export const JUMP_SPEED = 8;
 export const COYOTE_TIME = 0.08; // small grace period to allow jump a moment after leaving ground
 export const JUMP_BUFFER_TIME = 0.12; // buffer jump input slightly before landing
 
