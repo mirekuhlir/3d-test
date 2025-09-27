@@ -64,7 +64,26 @@ export function updatePlayer({ state, controls, isCollidingAtPosition, getCollis
     const now = performance.now();
     const withinCoyote = (now - state.lastGroundedTime) <= COYOTE_TIME * 1000 || isGrounded;
     const withinBuffer = (now - state.lastJumpPressedTime) <= JUMP_BUFFER_TIME * 1000;
-    if (withinCoyote && withinBuffer) {
+    
+    // If player is crouched and wants to jump, try to stand up instead
+    if (state.isCrouching && withinBuffer) {
+      // Check if there's enough space to stand up
+      const clearance = (state.normalHeight - state.currentHeight) + STAND_HEADROOM;
+      const blocked = isCollidingAtPosition(
+        obj.position,
+        state.currentHeight,
+        state.radius,
+        { yLift: clearance, ignoreWallTriangles: true, ignoreGround: true }
+      );
+      
+      if (!blocked) {
+        // Stand up instead of jumping
+        state.isCrouching = false;
+      }
+      // Clear jump request after handling crouch -> stand
+      state.wantJump = false;
+    } else if (withinCoyote && withinBuffer && !state.isCrouching) {
+      // Normal jump only if not crouched
       // Start from non-upward velocity to prevent stacking multiple jump impulses
       state.velocity.y = Math.max(0, state.velocity.y <= 0 ? state.velocity.y : 0) + state.jumpSpeed;
       state.canJump = false;

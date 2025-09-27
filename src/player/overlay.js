@@ -22,7 +22,7 @@ export function createPointerLockOverlay(controls, isDevModeActive = () => false
   overlay.innerHTML = `
     <div style="text-align:center">
       <div style="font-size:22px; font-weight:600; margin-bottom:6px;">Click to control with mouse</div>
-      <div style="opacity:0.85;">WASD: move • Space: jump • Ctrl/C: crouch (${crouchModeLabel})</div>
+      <div style="opacity:0.85;">WASD: move • Space: jump/stand up • Ctrl/C: crouch (${crouchModeLabel})</div>
     </div>
   `;
   overlay.style.cursor = 'pointer';
