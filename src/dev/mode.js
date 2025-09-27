@@ -26,6 +26,16 @@ export function createDevMode({
   devCamera.position.set(0, 5, 8);
   devCamera.lookAt(0, 1.6, 0);
   const devControls = createFPSControls(devCamera, renderer.domElement);
+  
+  // Player camera frustum helper (visible only in dev mode)
+  let cameraHelper = null;
+  function ensureCameraHelper() {
+    if (cameraHelper) return cameraHelper;
+    cameraHelper = new THREE.CameraHelper(baseCamera);
+    cameraHelper.visible = false;
+    scene.add(cameraHelper);
+    return cameraHelper;
+  }
 
   // Dev panel (floating UI)
   const devPanel = document.createElement('div');
@@ -93,6 +103,8 @@ export function createDevMode({
     devPanel.style.display = 'block';
     ensureCapsuleMesh();
     capsuleMesh.visible = true;
+    ensureCameraHelper();
+    cameraHelper.visible = true;
     // Lock dev controls for smooth look
     if (!devControls.isLocked) devControls.lock();
     // Pause gameplay keyboard bindings (jump, crouch, ...)
@@ -105,6 +117,7 @@ export function createDevMode({
     devPanel.style.display = 'none';
     if (overlay) overlay.style.display = 'flex';
     if (capsuleMesh) capsuleMesh.visible = false;
+    if (cameraHelper) cameraHelper.visible = false;
     if (devControls.isLocked) devControls.unlock();
     // Resume gameplay keyboard bindings
     resumeGameplay();
@@ -190,6 +203,7 @@ export function createDevMode({
     }
 
     if (capsuleMesh?.visible) updateCapsuleFromPlayer();
+    if (cameraHelper?.visible) cameraHelper.update();
   }
 
   function getCamera() {
@@ -208,6 +222,13 @@ export function createDevMode({
       capsuleMesh.material?.dispose?.();
       scene.remove(capsuleMesh);
       capsuleMesh = null;
+    }
+    if (cameraHelper) {
+      scene.remove(cameraHelper);
+      cameraHelper.geometry?.dispose?.();
+      // material is shared internal lines; guard just in case
+      cameraHelper.material?.dispose?.();
+      cameraHelper = null;
     }
   }
 
