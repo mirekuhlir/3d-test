@@ -22,7 +22,7 @@ function createMenuOverlay(onPlay) {
   root.style.zIndex = '30';
 
   const title = document.createElement('div');
-  title.textContent = 'Hlavní menu';
+  title.textContent = 'Main Menu';
   title.style.fontSize = '28px';
   title.style.fontWeight = '700';
 
@@ -39,11 +39,11 @@ function createMenuOverlay(onPlay) {
   progressWrap.appendChild(progressBar);
 
   const progressText = document.createElement('div');
-  progressText.textContent = 'Načítám… 0%';
+  progressText.textContent = 'Loading… 0%';
   progressText.style.opacity = '0.9';
 
   const playBtn = document.createElement('button');
-  playBtn.textContent = 'Hrát';
+  playBtn.textContent = 'Play';
   playBtn.style.padding = '10px 20px';
   playBtn.style.borderRadius = '8px';
   playBtn.style.border = 'none';
@@ -67,7 +67,7 @@ function createMenuOverlay(onPlay) {
     setProgress(p) {
       const pct = Math.round(Math.max(0, Math.min(1, p)) * 100);
       progressBar.style.width = `${pct}%`;
-      progressText.textContent = pct >= 100 ? 'Připraveno' : `Načítám… ${pct}%`;
+      progressText.textContent = pct >= 100 ? 'Ready' : `Loading… ${pct}%`;
     },
     enablePlay() {
       playBtn.disabled = false;

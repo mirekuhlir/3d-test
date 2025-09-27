@@ -1,4 +1,4 @@
-export function createPointerLockOverlay(controls) {
+export function createPointerLockOverlay(controls, isDevModeActive = () => false) {
   const overlay = document.createElement('div');
   overlay.style.position = 'absolute';
   overlay.style.inset = '0';
@@ -14,8 +14,8 @@ export function createPointerLockOverlay(controls) {
   overlay.style.userSelect = 'none';
   overlay.innerHTML = `
     <div style="text-align:center">
-      <div style="font-size:22px; font-weight:600; margin-bottom:6px;">Klikni pro ovládání myší</div>
-      <div style="opacity:0.85;">WASD: pohyb • Space: skok • Ctrl/C: skrčit</div>
+      <div style="font-size:22px; font-weight:600; margin-bottom:6px;">Click to control with mouse</div>
+      <div style="opacity:0.85;">WASD: move • Space: jump • Ctrl/C: crouch</div>
     </div>
   `;
   overlay.style.cursor = 'pointer';
@@ -29,7 +29,12 @@ export function createPointerLockOverlay(controls) {
     overlay.style.display = 'none';
   });
   controls.addEventListener('unlock', () => {
-    overlay.style.display = 'flex';
+    // Don't show overlay in dev mode
+    if (isDevModeActive()) {
+      overlay.style.display = 'none';
+    } else {
+      overlay.style.display = 'flex';
+    }
   });
 
   document.body.appendChild(overlay);

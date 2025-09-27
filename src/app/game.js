@@ -28,11 +28,6 @@ export function createGame({ renderer, assets = {} } = {}) {
   // Example usage of loaded assets (if provided):
   // if (assets.models?.world) scene.add(assets.models.world.scene);
 
-  const overlay = createPointerLockOverlay(controls);
-  const crosshair = createCrosshair(controls);
-  const fps = createFPSMeter();
-  const cleanupResize = setupResize({ renderer, camera });
-
   const state = createPlayerState();
   const { isCollidingAtPosition, getCollisionAtPosition } = createCollisionSystem(scene,DEFAULT_GROUND_TOLERANCE );
 
@@ -42,7 +37,7 @@ export function createGame({ renderer, assets = {} } = {}) {
     scene,
     baseCamera: camera,
     baseControls: controls,
-    overlay,
+    overlay: null, // overlay will be created later
     state,
     pauseGameplay: () => {
       cleanupKeyboard?.();
@@ -51,6 +46,14 @@ export function createGame({ renderer, assets = {} } = {}) {
       cleanupKeyboard = setupKeyboardInput(state);
     }
   });
+
+  const overlay = createPointerLockOverlay(controls, () => devMode.isActive());
+  const crosshair = createCrosshair(controls);
+  const fps = createFPSMeter();
+  const cleanupResize = setupResize({ renderer, camera });
+
+  // Set overlay reference in dev mode
+  devMode.setOverlay(overlay);
 
   const onCanvasClick = () => devMode.handleCanvasClick();
   renderer.domElement.addEventListener('click', onCanvasClick);

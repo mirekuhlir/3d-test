@@ -107,12 +107,11 @@ export function createDevMode({
   }
 
   function onKeyDownDev(e) {
-    if (e.code === 'Escape') {
-      if (!isActive) {
-        enter();
-      } else {
-        devPanel.style.display = devPanel.style.display === 'none' ? 'block' : 'none';
-      }
+    // In dev mode, block escape key from triggering menu
+    if (isActive && e.code === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
     }
   }
 
@@ -129,7 +128,8 @@ export function createDevMode({
     if (e.code === 'KeyD' || e.code === 'ArrowRight') devMove.right = false;
   }
 
-  window.addEventListener('keydown', onKeyDownDev);
+  // Use capture: true for escape handler to have priority
+  window.addEventListener('keydown', onKeyDownDev, true);
   window.addEventListener('keydown', onKeyDownDevMove);
   window.addEventListener('keyup', onKeyUpDevMove);
   btnExitDev?.addEventListener('click', exit);
@@ -149,7 +149,7 @@ export function createDevMode({
     container.style.right = '12px';
     container.style.top = '12px';
     const btn = document.createElement('button');
-    btn.textContent = 'Dev mód';
+    btn.textContent = 'Dev Mode';
     btn.id = 'devToggleBtn';
     btn.style.padding = '8px 14px';
     btn.style.borderRadius = '8px';
@@ -190,7 +190,7 @@ export function createDevMode({
   }
 
   function dispose() {
-    window.removeEventListener('keydown', onKeyDownDev);
+    window.removeEventListener('keydown', onKeyDownDev, true);
     window.removeEventListener('keydown', onKeyDownDevMove);
     window.removeEventListener('keyup', onKeyUpDevMove);
     btnExitDev?.removeEventListener?.('click', exit);
@@ -203,6 +203,10 @@ export function createDevMode({
     }
   }
 
+  function setOverlay(overlayRef) {
+    overlay = overlayRef;
+  }
+
   return {
     isActive: () => isActive,
     getCamera,
@@ -210,6 +214,7 @@ export function createDevMode({
     exit,
     handleCanvasClick,
     attachDevButton,
+    setOverlay,
     update,
     dispose
   };
