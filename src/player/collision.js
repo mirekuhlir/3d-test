@@ -40,6 +40,56 @@ export function createCollisionSystem(root, groundTolerance) {
   enableBVHAcceleration();
   const collisionGeometry = buildCollisionGeometry(root);
 
+  /**
+   * Computes collision at a position and returns whether it hits and the most relevant surface normal.
+   */
+  function getCollisionAtPosition(position, playerHeight, playerRadius, options = {}) {
+    const { yLift = 0, ignoreGround = false, ignoreGroundTriangles = false } = options;
+    const effectiveRadius = ignoreGround ? Math.max(0, playerRadius - groundTolerance) : playerRadius;
+    if (!collisionGeometry) return { hit: false, normal: null };
+
+    const baseY = position.y + yLift;
+    const start = new THREE.Vector3(position.x, baseY - playerHeight + effectiveRadius, position.z);
+    const end = new THREE.Vector3(position.x, baseY - effectiveRadius, position.z);
+    const capsule = new Capsule(start, end, effectiveRadius);
+
+    const segment = new THREE.Line3(capsule.start, capsule.end);
+    const halfLength = capsule.start.distanceTo(capsule.end) * 0.5;
+
+    TEMP_sphere.center.copy(capsule.start).add(capsule.end).multiplyScalar(0.5);
+    TEMP_sphere.radius = halfLength + capsule.radius;
+
+    let anyHit = false;
+    let minDist = Infinity;
+    let normal = null;
+
+    collisionGeometry.boundsTree.shapecast({
+      intersectsBounds: (box) => box.intersectsSphere(TEMP_sphere),
+      intersectsTriangle: (tri) => {
+        if (ignoreGroundTriangles) {
+          tri.getNormal(TEMP_triNormal);
+          const alignmentWithUp = TEMP_triNormal.dot(UP);
+          if (alignmentWithUp > 0.8) {
+            return false;
+          }
+        }
+        const dist = tri.closestPointToSegment(segment, TEMP_triPoint, TEMP_capPoint);
+        if (dist <= capsule.radius) {
+          anyHit = true;
+          if (dist < minDist) {
+            // capture the most relevant normal (closest surface)
+            tri.getNormal(TEMP_triNormal);
+            normal = TEMP_triNormal.clone();
+            minDist = dist;
+          }
+        }
+        return false;
+      }
+    });
+
+    return { hit: anyHit, normal };
+  }
+
   function isCollidingAtPosition(position, playerHeight, playerRadius, options = {}) {
     const { yLift = 0, ignoreGround = false, ignoreGroundTriangles = false } = options;
     const effectiveRadius = ignoreGround ? Math.max(0, playerRadius - groundTolerance) : playerRadius;
@@ -80,6 +130,6 @@ export function createCollisionSystem(root, groundTolerance) {
     return hit;
   }
 
-  return { isCollidingAtPosition, collisionGeometry };
+  return { isCollidingAtPosition, getCollisionAtPosition, collisionGeometry };
 }
 

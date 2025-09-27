@@ -31,7 +31,7 @@ export function createGame({ renderer, assets = {} } = {}) {
 
   const state = createPlayerState();
   const GROUND_TOLERANCE = getGroundTolerance();
-  const { isCollidingAtPosition } = createCollisionSystem(scene, GROUND_TOLERANCE);
+  const { isCollidingAtPosition, getCollisionAtPosition } = createCollisionSystem(scene, GROUND_TOLERANCE);
 
   const onCanvasClick = () => {
     if (!controls.isLocked) controls.lock();
@@ -45,7 +45,7 @@ export function createGame({ renderer, assets = {} } = {}) {
     scene,
     camera,
     update: (delta) => {
-      updatePlayer({ state, controls, isCollidingAtPosition, delta });
+      updatePlayer({ state, controls, isCollidingAtPosition, getCollisionAtPosition, delta });
       fps.tick();
     }
   });
