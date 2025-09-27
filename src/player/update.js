@@ -33,7 +33,8 @@ export function updatePlayer({ state, controls, isCollidingAtPosition, getCollis
 
   const targetHeight = state.isCrouching ? state.crouchHeight : state.normalHeight;
   if (controls.isLocked) {
-    if (state.direction.lengthSq() > 0) {
+    const allowAirAccel = state.canJump || state.airControlEnabled;
+    if (allowAirAccel && state.direction.lengthSq() > 0) {
       state.velocity.z -= state.direction.z * state.moveAccel * delta;
       state.velocity.x -= state.direction.x * state.moveAccel * delta;
     }
@@ -191,12 +192,14 @@ export function updatePlayer({ state, controls, isCollidingAtPosition, getCollis
     state.velocity.y = 0;
     if (vyBefore < 0) {
       state.canJump = true;
+      state.airControlEnabled = true;
     }
   }
   if (obj.position.y <= targetHeight) {
     state.velocity.y = 0;
     obj.position.y = targetHeight;
     state.canJump = true;
+    state.airControlEnabled = true;
   }
 }
 

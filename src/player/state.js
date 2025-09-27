@@ -28,6 +28,14 @@ export function createPlayerState() {
     jumpSpeed: JUMP_SPEED,
 
     velocity: new THREE.Vector3(),
-    direction: new THREE.Vector3()
+    direction: new THREE.Vector3(),
+
+    // Air control: when player jumps without directional input, disable mid-air WASD acceleration
+    airControlEnabled: true,
+
+    // Jump snapshot info
+    jumpDirX: 0,
+    jumpDirZ: 0,
+    didJumpThisFrame: false
   };
 }

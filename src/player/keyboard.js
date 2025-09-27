@@ -21,6 +21,14 @@ export function setupKeyboardInput(state) {
         if (state.canJump === true) {
           state.velocity.y += state.jumpSpeed;
           state.canJump = false;
+          // Snapshot input direction for jump handling in update loop
+          const dirZ = Number(state.moveForward) - Number(state.moveBackward);
+          const dirX = Number(state.moveRight) - Number(state.moveLeft);
+          state.jumpDirX = dirX;
+          state.jumpDirZ = dirZ;
+          state.didJumpThisFrame = true;
+          // Enable air control only if there was directional input when the jump started
+          state.airControlEnabled = (dirX !== 0 || dirZ !== 0);
         }
         break;
       case 'ControlLeft':
