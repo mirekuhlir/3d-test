@@ -87,6 +87,119 @@ export function addEnvironment(scene) {
   ];
   route2.forEach(step => createPlatform({ ...step, color: altColor }));
 
+  // Sloped surfaces test area: a variety of inclined geometries for collision testing
+  // -------------------------------------------------------------------------------
+  // Helpers to create different kinds of sloped shapes
+  function createRampBox({ x, y = 0.35, z, width, depth, thickness = 0.35, angleDeg = 20, axis = 'x', color = 0x999999 }) {
+    const geometry = new THREE.BoxGeometry(width, thickness, depth);
+    const material = new THREE.MeshStandardMaterial({ color, metalness: 0.15, roughness: 0.55 });
+    const ramp = new THREE.Mesh(geometry, material);
+    ramp.position.set(x, y, z);
+    const angleRad = THREE.MathUtils.degToRad(angleDeg);
+    if (axis === 'x') {
+      // Tilt along X (rotate around Z)
+      ramp.rotation.z = angleRad;
+    } else if (axis === 'z') {
+      // Tilt along Z (rotate around X)
+      ramp.rotation.x = -angleRad;
+    }
+    ramp.castShadow = false;
+    ramp.receiveShadow = true;
+    scene.add(ramp);
+    return ramp;
+  }
+
+  function createWedge({ x, z, width, height, depth, rotationYDeg = 0, color = 0xaaaaaa }) {
+    // Triangular prism (right wedge) with sloped top: triangle in XY extruded along Z
+    const shape = new THREE.Shape();
+    shape.moveTo(0, 0);
+    shape.lineTo(width, 0);
+    shape.lineTo(0, height);
+    shape.lineTo(0, 0);
+
+    const extrudeSettings = { depth, steps: 1, bevelEnabled: false };
+    const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+    // Center around X/Z, keep base at y=0 so it rests on the ground
+    geometry.translate(-width / 2, 0, -depth / 2);
+
+    const material = new THREE.MeshStandardMaterial({ color, metalness: 0.15, roughness: 0.55 });
+    const wedge = new THREE.Mesh(geometry, material);
+    wedge.position.set(x, 0, z);
+    wedge.rotation.y = THREE.MathUtils.degToRad(rotationYDeg);
+    wedge.castShadow = false;
+    wedge.receiveShadow = true;
+    scene.add(wedge);
+    return wedge;
+  }
+
+  function createInclinedPlate({ x, z, width, depth, angleDeg, axis = 'x', thickness = 0.06, color = 0xbbbbbb }) {
+    // Very thin box acting as a plane, tilted by angle
+    const geometry = new THREE.BoxGeometry(width, thickness, depth);
+    const material = new THREE.MeshStandardMaterial({ color, metalness: 0.05, roughness: 0.7 });
+    const plate = new THREE.Mesh(geometry, material);
+    // Slightly above ground so it does not z-fight with the floor
+    plate.position.set(x, thickness / 2 + 0.002, z);
+    const angleRad = THREE.MathUtils.degToRad(angleDeg);
+    if (axis === 'x') plate.rotation.z = angleRad;
+    if (axis === 'z') plate.rotation.x = -angleRad;
+    plate.castShadow = false;
+    plate.receiveShadow = true;
+    scene.add(plate);
+    return plate;
+  }
+
+  function createCylinderSlope({ x, z, radius = 1.2, height = 3.0, tiltDeg = 25, axis = 'x', color = 0x88c0d0 }) {
+    const geometry = new THREE.CylinderGeometry(radius, radius, height, 24, 1, false);
+    const material = new THREE.MeshStandardMaterial({ color, metalness: 0.1, roughness: 0.6 });
+    const cyl = new THREE.Mesh(geometry, material);
+    // Lift so it rests on ground approximately by its radius
+    cyl.position.set(x, radius, z);
+    const angleRad = THREE.MathUtils.degToRad(tiltDeg);
+    if (axis === 'x') cyl.rotation.z = angleRad;
+    if (axis === 'z') cyl.rotation.x = angleRad;
+    cyl.castShadow = false;
+    cyl.receiveShadow = true;
+    scene.add(cyl);
+    return cyl;
+  }
+
+  function createConeSlope({ x, z, radius = 1.2, height = 2.0, tiltDeg = 35, axis = 'x', color = 0xe76f51 }) {
+    const geometry = new THREE.ConeGeometry(radius, height, 24, 1, false);
+    const material = new THREE.MeshStandardMaterial({ color, metalness: 0.15, roughness: 0.55 });
+    const cone = new THREE.Mesh(geometry, material);
+    // Lift so the base is near ground
+    cone.position.set(x, height / 2, z);
+    const angleRad = THREE.MathUtils.degToRad(tiltDeg);
+    if (axis === 'x') cone.rotation.z = angleRad;
+    if (axis === 'z') cone.rotation.x = angleRad;
+    cone.castShadow = false;
+    cone.receiveShadow = true;
+    scene.add(cone);
+    return cone;
+  }
+
+  // A small grid of ramps with increasing slope angles (x-tilt)
+  createRampBox({ x: -8.0, z: 8.0, width: 3.0, depth: 2.0, thickness: 0.35, angleDeg: 10, axis: 'x', color: 0x9b9b9b });
+  createRampBox({ x: -4.5, z: 8.0, width: 3.0, depth: 2.0, thickness: 0.35, angleDeg: 20, axis: 'x', color: 0x9b9b9b });
+  createRampBox({ x: -1.0, z: 8.0, width: 3.0, depth: 2.0, thickness: 0.35, angleDeg: 35, axis: 'x', color: 0x9b9b9b });
+  createRampBox({ x: 2.5, z: 8.0, width: 3.0, depth: 2.0, thickness: 0.35, angleDeg: 45, axis: 'x', color: 0x9b9b9b });
+
+  // Z-tilted ramps (slope along forward/back direction)
+  createRampBox({ x: -6.0, z: 11.5, width: 2.0, depth: 3.0, thickness: 0.35, angleDeg: 15, axis: 'z', color: 0xa0a0a0 });
+  createRampBox({ x: -2.5, z: 11.5, width: 2.0, depth: 3.0, thickness: 0.35, angleDeg: 30, axis: 'z', color: 0xa0a0a0 });
+
+  // Wedges with explicit triangular profile
+  createWedge({ x: 6.0, z: 8.0, width: 2.4, height: 1.2, depth: 2.0, rotationYDeg: 0, color: 0x5dade2 });
+  createWedge({ x: 9.0, z: 8.0, width: 2.4, height: 1.6, depth: 2.0, rotationYDeg: 180, color: 0x76d7c4 });
+
+  // Very thin inclined plates
+  createInclinedPlate({ x: -8.0, z: 15.0, width: 3.0, depth: 3.0, angleDeg: 20, axis: 'x', color: 0xcfcfcf });
+  createInclinedPlate({ x: -3.5, z: 15.0, width: 3.0, depth: 3.0, angleDeg: 35, axis: 'z', color: 0xdfdfdf });
+
+  // Curved surfaces for edge cases
+  createCylinderSlope({ x: 2.0, z: 12.5, radius: 1.2, height: 3.0, tiltDeg: 25, axis: 'x', color: 0x88c0d0 });
+  createConeSlope({ x: 6.0, z: 12.5, radius: 1.1, height: 2.4, tiltDeg: 35, axis: 'z', color: 0xe76f51 });
+
   // 3D text in the scene
   const fontLoader = new FontLoader();
   const fontUrl = 'https://unpkg.com/three@0.166.1/examples/fonts/helvetiker_regular.typeface.json';
