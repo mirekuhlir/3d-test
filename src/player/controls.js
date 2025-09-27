@@ -4,3 +4,5 @@ export function createFPSControls(camera, domElement) {
   const controls = new PointerLockControls(camera, domElement);
   return controls;
 }
+
+

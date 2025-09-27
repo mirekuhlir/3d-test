@@ -22,7 +22,7 @@
  */
 import * as THREE from 'three';
 
-export function createLoop({ renderer, scene, camera, update }) {
+export function createLoop({ renderer, scene, camera, getCamera, update }) {
   // Clock for measuring time between frames (delta time)
   const clock = new THREE.Clock();
   // ID of the current requestAnimationFrame; null means the loop is not running
@@ -34,7 +34,8 @@ export function createLoop({ renderer, scene, camera, update }) {
     // User update logic before rendering
     update(delta);
     // Render the current frame
-    renderer.render(scene, camera);
+    const activeCamera = typeof getCamera === 'function' ? getCamera() : camera;
+    renderer.render(scene, activeCamera);
     // Schedule the next frame
     rafId = requestAnimationFrame(onFrame);
   }

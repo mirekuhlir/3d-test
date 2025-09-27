@@ -1,4 +1,5 @@
 // Main gameplay scene: player controls, environment, HUD and loop.
+import * as THREE from 'three';
 import { createScene } from '../core/scene.js';
 import { createCamera } from '../player/camera.js';
 import { createFPSControls } from '../player/controls.js';
@@ -11,6 +12,7 @@ import { setupKeyboardInput } from '../player/keyboard.js';
 import { getGroundTolerance } from '../player/config.js';
 import { createCollisionSystem } from '../player/collision.js';
 import { updatePlayer } from '../player/update.js';
+import { createDevMode } from '../dev/mode.js';
 
 export function createGame({ renderer, assets = {} } = {}) {
   const scene = createScene();
@@ -18,6 +20,8 @@ export function createGame({ renderer, assets = {} } = {}) {
 
   const controls = createFPSControls(camera, renderer.domElement);
   scene.add(controls.getObject());
+
+  let cleanupKeyboard = null;
 
   addEnvironment(scene);
 
@@ -33,19 +37,40 @@ export function createGame({ renderer, assets = {} } = {}) {
   const GROUND_TOLERANCE = getGroundTolerance();
   const { isCollidingAtPosition, getCollisionAtPosition } = createCollisionSystem(scene, GROUND_TOLERANCE);
 
-  const onCanvasClick = () => {
-    if (!controls.isLocked) controls.lock();
-  };
+  // Initialize dev mode
+  const devMode = createDevMode({
+    renderer,
+    scene,
+    baseCamera: camera,
+    baseControls: controls,
+    overlay,
+    state,
+    pauseGameplay: () => {
+      cleanupKeyboard?.();
+    },
+    resumeGameplay: () => {
+      cleanupKeyboard = setupKeyboardInput(state);
+    }
+  });
+
+  const onCanvasClick = () => devMode.handleCanvasClick();
   renderer.domElement.addEventListener('click', onCanvasClick);
 
-  const cleanupKeyboard = setupKeyboardInput(state);
+  cleanupKeyboard = setupKeyboardInput(state);
+
+  // Attach dev button to overlay
+  devMode.attachDevButton(overlay);
 
   const loop = createLoop({
     renderer,
     scene,
     camera,
+    getCamera: () => devMode.getCamera(),
     update: (delta) => {
-      updatePlayer({ state, controls, isCollidingAtPosition, getCollisionAtPosition, delta });
+      if (!devMode.isActive()) {
+        updatePlayer({ state, controls, isCollidingAtPosition, getCollisionAtPosition, delta });
+      }
+      devMode.update(delta);
       fps.tick();
     }
   });
@@ -57,6 +82,7 @@ export function createGame({ renderer, assets = {} } = {}) {
     fps.destroy();
     overlay.remove();
     crosshair.remove();
+    devMode.dispose();
     cleanupResize();
     // Optionally dispose scene resources here if needed.
   }

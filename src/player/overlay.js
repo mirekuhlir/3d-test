@@ -15,7 +15,7 @@ export function createPointerLockOverlay(controls) {
   overlay.innerHTML = `
     <div style="text-align:center">
       <div style="font-size:22px; font-weight:600; margin-bottom:6px;">Klikni pro ovládání myší</div>
-      <div style="opacity:0.85">WASD: pohyb • Space: skok • Ctrl/C: skrčit</div>
+      <div style="opacity:0.85;">WASD: pohyb • Space: skok • Ctrl/C: skrčit</div>
     </div>
   `;
   overlay.style.cursor = 'pointer';
