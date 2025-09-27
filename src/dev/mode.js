@@ -27,6 +27,27 @@ export function createDevMode({
   devCamera.lookAt(0, 1.6, 0);
   const devControls = createFPSControls(devCamera, renderer.domElement);
   
+  // Sync dev camera/controls from base camera/controls
+  function syncDevCameraFromBase() {
+    const baseObj = baseControls.getObject();
+    const devObj = devControls.getObject();
+    // Position: copy player (base controls) position
+    devObj.position.copy(baseObj.position);
+    
+    // Orientation: derive yaw (Y) and pitch (X) from base camera quaternion
+    const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+    euler.setFromQuaternion(baseCamera.quaternion);
+    // yawObject
+    devObj.rotation.y = euler.y;
+    // pitchObject (first child of yawObject in PointerLockControls)
+    const pitchObj = devObj.children?.[0];
+    if (pitchObj) {
+      pitchObj.rotation.x = euler.x;
+    }
+    // Also copy camera quaternion for completeness
+    devCamera.quaternion.copy(baseCamera.quaternion);
+  }
+  
   // Player camera frustum helper (visible only in dev mode)
   let cameraHelper = null;
   function ensureCameraHelper() {
@@ -115,6 +136,8 @@ export function createDevMode({
     if (baseControls.isLocked) baseControls.unlock();
     if (overlay) overlay.style.display = 'none';
     devPanel.style.display = 'block';
+    // Place dev camera at player's current position/orientation
+    syncDevCameraFromBase();
     const targetHeight = state.isCrouching ? state.crouchHeight : state.normalHeight;
     ensureCapsuleMesh(targetHeight);
     capsuleMesh.visible = true;
