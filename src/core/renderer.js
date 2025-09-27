@@ -12,6 +12,7 @@
  * the render loop.
  */
 import * as THREE from 'three';
+import { RENDER_SCALE, MAX_DEVICE_PIXEL_RATIO } from './config.js';
 
 export function createRenderer(canvas) {
   // Create a WebGLRenderer that draws into the provided canvas, with anti-aliasing
@@ -19,11 +20,16 @@ export function createRenderer(canvas) {
   // layering over other UI.
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 
-  // Set the device pixel ratio and cap it at 2 to balance sharpness and performance.
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  // Compute effective pixel ratio and size based on config
+  const effectiveDPR = Math.min(window.devicePixelRatio, MAX_DEVICE_PIXEL_RATIO);
+  renderer.setPixelRatio(effectiveDPR);
 
-  // Match the renderer size to the current window (viewport) dimensions.
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  // Match the renderer size to the current window (viewport) dimensions,
+  // but render internally at a lower resolution defined by RENDER_SCALE.
+  // We keep CSS size full; Three.js setSize handles drawingBuffer vs canvas size.
+  const width = Math.floor(window.innerWidth * RENDER_SCALE);
+  const height = Math.floor(window.innerHeight * RENDER_SCALE);
+  renderer.setSize(width, height, false);
 
   // Use sRGB output color space for more accurate on-screen color representation.
   renderer.outputColorSpace = THREE.SRGBColorSpace;
