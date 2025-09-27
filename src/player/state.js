@@ -10,6 +10,8 @@ import {
   MOVE_ACCEL,
   DAMPING,
   JUMP_SPEED,
+  COYOTE_TIME,
+  JUMP_BUFFER_TIME,
   PLAYER_RADIUS
 } from './constants.js';
 
@@ -21,6 +23,10 @@ export function createPlayerState() {
     moveRight: false,
     isCrouching: false,
     canJump: false,
+    wantJump: false,
+    // Jump timing helpers (coyote time + input buffer)
+    lastGroundedTime: -Infinity,
+    lastJumpPressedTime: -Infinity,
 
     normalHeight: PLAYER_NORMAL_HEIGHT,
     crouchHeight: PLAYER_CROUCH_HEIGHT,

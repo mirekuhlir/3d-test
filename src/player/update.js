@@ -13,7 +13,7 @@
 //   delta                          // seconds since last frame
 // })
 import * as THREE from 'three';
-import { STEP_MAX_HEIGHT, STAND_HEADROOM, CROUCH_DURATION, STAND_DURATION } from './constants.js';
+import { STEP_MAX_HEIGHT, STAND_HEADROOM, CROUCH_DURATION, STAND_DURATION, COYOTE_TIME, JUMP_BUFFER_TIME } from './constants.js';
 
 // Temp vectors to avoid allocations each frame
 const TMP_FORWARD = new THREE.Vector3();
@@ -48,6 +48,40 @@ export function updatePlayer({ state, controls, isCollidingAtPosition, getCollis
   // Acquire player object once per frame (camera holder / capsule center)
   const obj = controls.getObject();
 
+  // Grounded check (ignoring walls). Also consider the exact floor level (y == height)
+  const groundedTriangles = isCollidingAtPosition(
+    obj.position,
+    state.currentHeight,
+    state.radius,
+    { yLift: -0.03, ignoreWallTriangles: true }
+  );
+  const groundedByHeight = obj.position.y <= state.currentHeight + 1e-5;
+  const isGrounded = groundedTriangles || groundedByHeight || state.canJump;
+  if (isGrounded) state.lastGroundedTime = performance.now();
+
+  // Process buffered jump (coyote time + jump buffer)
+  if (state.wantJump) {
+    const now = performance.now();
+    const withinCoyote = (now - state.lastGroundedTime) <= COYOTE_TIME * 1000 || isGrounded;
+    const withinBuffer = (now - state.lastJumpPressedTime) <= JUMP_BUFFER_TIME * 1000;
+    if (withinCoyote && withinBuffer) {
+      // Start from non-upward velocity to prevent stacking multiple jump impulses
+      state.velocity.y = Math.max(0, state.velocity.y <= 0 ? state.velocity.y : 0) + state.jumpSpeed;
+      state.canJump = false;
+      // Snapshot of input direction
+      const dirZ = Number(state.moveForward) - Number(state.moveBackward);
+      const dirX = Number(state.moveRight) - Number(state.moveLeft);
+      state.jumpDirX = dirX;
+      state.jumpDirZ = dirZ;
+      state.didJumpThisFrame = true;
+      state.airControlEnabled = (dirX !== 0 || dirZ !== 0);
+      state.wantJump = false;
+    } else if (!withinBuffer) {
+      // Buffer expired; drop the request
+      state.wantJump = false;
+    }
+  }
+
   // Smooth height changes (crouch/stand) with feet anchored.
   // Our capsule's TOP is at obj.position.y; bottom is obj.position.y - height.
   // We animate currentHeight -> desiredHeight over time, moving the top by the
@@ -68,7 +102,7 @@ export function updatePlayer({ state, controls, isCollidingAtPosition, getCollis
         obj.position,
         fromHeight,
         state.radius,
-        { yLift: clearance, ignoreGroundTriangles: true, ignoreGround: true }
+        { yLift: clearance, ignoreWallTriangles: true, ignoreGround: true }
       );
       if (blocked) {
         // Not enough space — remain crouched
@@ -119,6 +153,7 @@ export function updatePlayer({ state, controls, isCollidingAtPosition, getCollis
     const moveZ = -state.velocity.z * delta;
 
     if (moveX !== 0 || moveZ !== 0) {
+      let horizontalResolved = false;
       // Step probing granularity: smaller = smoother but more collision queries
       const stepIncrement = Math.min(0.03, STEP_MAX_HEIGHT);
 
@@ -205,13 +240,13 @@ export function updatePlayer({ state, controls, isCollidingAtPosition, getCollis
                   // Update velocities to align with the slide for next frame
                   state.velocity.x = -projMoveX / delta;
                   state.velocity.z = -projMoveZ / delta;
-                  return; // managed to slide; skip axis-separated fallback
+                  horizontalResolved = true; // managed to slide; proceed to vertical handling
                 }
               }
             }
           }
           // Fallback: try axis-separated moves with their own step-up
-          if (moveX !== 0) {
+          if (!horizontalResolved && moveX !== 0) {
             controls.moveRight(moveX);
             if (isCollidingAtPosition(obj.position, targetHeight, state.radius, { ignoreGroundTriangles: true })) {
               controls.moveRight(-moveX);
@@ -233,7 +268,7 @@ export function updatePlayer({ state, controls, isCollidingAtPosition, getCollis
             }
           }
 
-          if (moveZ !== 0) {
+          if (!horizontalResolved && moveZ !== 0) {
             controls.moveForward(moveZ);
             if (isCollidingAtPosition(obj.position, targetHeight, state.radius, { ignoreGroundTriangles: true })) {
               controls.moveForward(-moveZ);
@@ -263,13 +298,14 @@ export function updatePlayer({ state, controls, isCollidingAtPosition, getCollis
   // Reuse the same `obj` acquired earlier for consistency
   const vyBefore = state.velocity.y; // remember sign to detect landing
   obj.position.y += state.velocity.y * delta;
-  // Block vertical movement if colliding with boxes
-  if (isCollidingAtPosition(obj.position, targetHeight, state.radius)) {
+  // Block vertical movement if colliding with ground/ceiling (ignore walls)
+  if (isCollidingAtPosition(obj.position, targetHeight, state.radius, { ignoreWallTriangles: true })) {
     obj.position.y -= state.velocity.y * delta;
     state.velocity.y = 0;
     if (vyBefore < 0) {
       state.canJump = true; // landed
       state.airControlEnabled = true;
+      state.lastGroundedTime = performance.now();
     }
   }
   if (obj.position.y <= targetHeight) {
@@ -277,6 +313,7 @@ export function updatePlayer({ state, controls, isCollidingAtPosition, getCollis
     obj.position.y = targetHeight;
     state.canJump = true; // snap to ground if below floor
     state.airControlEnabled = true;
+    state.lastGroundedTime = performance.now();
   }
 }
 

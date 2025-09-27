@@ -15,6 +15,7 @@
 // - ignoreGround?: boolean — shrinks capsule radius by `groundTolerance` to
 //   reduce ground “sticking” during horizontal checks.
 // - ignoreGroundTriangles?: boolean — filter nearly-horizontal faces to focus on walls.
+// - ignoreWallTriangles?: boolean — consider only ground/ceiling-like faces (skip near-vertical walls).
 //
 // Performance notes:
 // - Broadphase sphere vs AABB quickly prunes BVH nodes before triangle tests.
@@ -69,7 +70,7 @@ export function createCollisionSystem(root, groundTolerance) {
    * tiny ground touches; `ignoreGroundTriangles` filters near-horizontal faces.
    */
   function getCollisionAtPosition(position, playerHeight, playerRadius, options = {}) {
-    const { yLift = 0, ignoreGround = false, ignoreGroundTriangles = false } = options;
+    const { yLift = 0, ignoreGround = false, ignoreGroundTriangles = false, ignoreWallTriangles = false } = options;
     // Shrink radius to reduce incidental ground contact when desired
     const effectiveRadius = ignoreGround ? Math.max(0, playerRadius - groundTolerance) : playerRadius;
     if (!collisionGeometry) return { hit: false, normal: null };
@@ -94,12 +95,17 @@ export function createCollisionSystem(root, groundTolerance) {
     collisionGeometry.boundsTree.shapecast({
       intersectsBounds: (box) => box.intersectsSphere(TEMP_sphere),
       intersectsTriangle: (tri) => {
-        // Optionally skip near-horizontal faces ("ground") to get wall normals
-        if (ignoreGroundTriangles) {
+        // Optional face filtering
+        if (ignoreGroundTriangles || ignoreWallTriangles) {
           tri.getNormal(TEMP_triNormal);
           const alignmentWithUp = TEMP_triNormal.dot(UP);
-          // Threshold ~0.8 (~36.9° from up): treat as ground-like, skip for wall normals
-          if (alignmentWithUp > 0.8) {
+          // Threshold ~0.8 (~36.9° from up)
+          if (ignoreGroundTriangles && alignmentWithUp > 0.8) {
+            // Skip ground-like faces when we're interested in walls
+            return false;
+          }
+          if (ignoreWallTriangles && Math.abs(alignmentWithUp) <= 0.8) {
+            // Skip near-vertical faces when we only care about ground/ceiling
             return false;
           }
         }
@@ -121,7 +127,7 @@ export function createCollisionSystem(root, groundTolerance) {
   }
 
   function isCollidingAtPosition(position, playerHeight, playerRadius, options = {}) {
-    const { yLift = 0, ignoreGround = false, ignoreGroundTriangles = false } = options;
+    const { yLift = 0, ignoreGround = false, ignoreGroundTriangles = false, ignoreWallTriangles = false } = options;
     // Shrink radius to reduce incidental ground contact when desired
     const effectiveRadius = ignoreGround ? Math.max(0, playerRadius - groundTolerance) : playerRadius;
     if (!collisionGeometry) return false;
@@ -142,10 +148,13 @@ export function createCollisionSystem(root, groundTolerance) {
     collisionGeometry.boundsTree.shapecast({
       intersectsBounds: (box) => box.intersectsSphere(TEMP_sphere),
       intersectsTriangle: (tri) => {
-        if (ignoreGroundTriangles) {
+        if (ignoreGroundTriangles || ignoreWallTriangles) {
           tri.getNormal(TEMP_triNormal);
           const alignmentWithUp = TEMP_triNormal.dot(UP);
-          if (alignmentWithUp > 0.8) {
+          if (ignoreGroundTriangles && alignmentWithUp > 0.8) {
+            return false;
+          }
+          if (ignoreWallTriangles && Math.abs(alignmentWithUp) <= 0.8) {
             return false;
           }
         }
