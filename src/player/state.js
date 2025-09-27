@@ -26,6 +26,11 @@ export function createPlayerState() {
     crouchHeight: PLAYER_CROUCH_HEIGHT,
     radius: PLAYER_RADIUS,
 
+    // Current player capsule height (maintain across frames for correct
+    // camera movement when height changes – we want the "feet" to stay
+    // in the same place while the capsule top position changes)
+    currentHeight: PLAYER_NORMAL_HEIGHT,
+
     gravity: GRAVITY,
     moveAccel: MOVE_ACCEL,
     damping: DAMPING,

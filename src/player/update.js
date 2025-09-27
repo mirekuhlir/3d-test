@@ -48,30 +48,39 @@ export function updatePlayer({ state, controls, isCollidingAtPosition, getCollis
   // Acquire player object once per frame (camera holder / capsule center)
   const obj = controls.getObject();
 
-  // Prevent standing up into an obstacle:
-  // Our capsule is defined so that its TOP is at obj.position.y.
-  // To check head clearance, we probe by lifting the capsule upward by the amount
-  // needed to reach standing head height + a small safety margin. We keep the
-  // capsule compact (crouch height) to focus on headroom and ignore near-horizontal
-  // triangles (floors). This prevents false positives from the ground.
-  if (!state.isCrouching) {
-    const desiredHeadY = state.normalHeight + STAND_HEADROOM;
-    const lift = Math.max(0, desiredHeadY - obj.position.y);
-    if (lift > 0) {
-      const blockedStand = isCollidingAtPosition(
+  // Handle height changes (crouch/stand) while keeping feet anchored.
+  // Our capsule's TOP is at obj.position.y; bottom is obj.position.y - height.
+  // When the desired height changes, shift obj.position.y by the delta so that
+  // the bottom remains at the same world Y. Before growing, verify headroom.
+  let desiredHeight = state.isCrouching ? state.crouchHeight : state.normalHeight;
+  if (Math.abs(desiredHeight - state.currentHeight) > 1e-6) {
+    const deltaH = desiredHeight - state.currentHeight;
+    if (deltaH > 0) {
+      // Attempt to stand up: check clearance above the head
+      const clearance = deltaH + STAND_HEADROOM;
+      const blocked = isCollidingAtPosition(
         obj.position,
-        state.crouchHeight, // compact probe capsule, we only care about headroom
+        state.crouchHeight,
         state.radius,
-        { yLift: lift, ignoreGroundTriangles: true, ignoreGround: true }
+        { yLift: clearance, ignoreGroundTriangles: true, ignoreGround: true }
       );
-      if (blockedStand) {
+      if (blocked) {
+        // Stay crouched if there isn't enough space
+        desiredHeight = state.currentHeight;
         state.isCrouching = true;
+      } else {
+        obj.position.y += deltaH; // keep feet fixed
+        state.currentHeight = desiredHeight;
       }
+    } else {
+      // Shrinking (crouch) — always allowed; move top down to keep feet fixed
+      obj.position.y += deltaH;
+      state.currentHeight = desiredHeight;
     }
   }
 
-  // Choose collision capsule height based on (potentially adjusted) crouch state
-  const targetHeight = state.isCrouching ? state.crouchHeight : state.normalHeight;
+  // Use the applied height for collision resolution this frame
+  const targetHeight = state.currentHeight;
   if (controls.isLocked) {
     // Allow horizontal acceleration if grounded or air-control is enabled
     const allowAirAccel = state.canJump || state.airControlEnabled;
