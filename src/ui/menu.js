@@ -4,10 +4,10 @@
 // minimal Three.js background animation. Shows preload progress, enables the
 // Play button when ready, and cleans up on exit.
 import * as THREE from 'three';
-import { createScene } from '../core/scene.js';
-import { createCamera } from '../player/camera.js';
-import { createLoop } from '../core/loop.js';
-import { setupResize } from '../systems/resize.js';
+import { createScene } from '../engine/scene.js';
+import { createCamera } from '../player/view/camera.js';
+import { createLoop } from '../engine/loop.js';
+import { setupResize } from '../engine/resize.js';
 
 function createMenuOverlay(onPlay) {
   // Root overlay container

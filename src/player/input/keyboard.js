@@ -3,7 +3,7 @@
 // Responsibility: Translate keydown/keyup events into state flags used by the
 // player update loop (WASD movement, jumping, crouching). Also snapshots
 // directional input at jump start to drive air-control behavior.
-import { CROUCH_TOGGLE } from './constants.js';
+import { CROUCH_TOGGLE } from '../physics/constants.js';
 
 export function setupKeyboardInput(state) {
   function onKeyDown(event) {

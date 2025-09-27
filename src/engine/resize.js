@@ -2,7 +2,7 @@
 // -------------
 // Responsibility: Keep camera projection and renderer buffers in sync with
 // window size and configured DPR/render scale. Returns a cleanup function.
-import { RENDER_SCALE, MAX_DEVICE_PIXEL_RATIO } from '../core/config.js';
+import { RENDER_SCALE, MAX_DEVICE_PIXEL_RATIO } from './config.js';
 
 export function setupResize({ renderer, camera }) {
   function onResize() {

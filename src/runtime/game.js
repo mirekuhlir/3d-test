@@ -4,18 +4,18 @@
 // controls, environment, HUD overlays, collision system, dev mode, and the
 // render loop. Provides lifecycle helpers to start/stop and dispose the game.
 import * as THREE from 'three';
-import { createScene } from '../core/scene.js';
-import { createCamera } from '../player/camera.js';
-import { createFPSControls } from '../player/controls.js';
-import { createPointerLockOverlay, createCrosshair, createFPSMeter } from '../player/overlay.js';
-import { addEnvironment } from '../objects/environment.js';
-import { setupResize } from '../systems/resize.js';
-import { createPlayerState } from '../player/state.js';
-import { createLoop } from '../core/loop.js';
-import { setupKeyboardInput } from '../player/keyboard.js';
-import { DEFAULT_GROUND_TOLERANCE } from '../player/constants.js';
-import { createCollisionSystem } from '../player/collision.js';
-import { updatePlayer } from '../player/update.js';
+import { createScene } from '../engine/scene.js';
+import { createCamera } from '../player/view/camera.js';
+import { createFPSControls } from '../player/view/controls.js';
+import { createPointerLockOverlay, createCrosshair, createFPSMeter } from '../player/view/overlay.js';
+import { addEnvironment } from '../objects/environment/index.js';
+import { setupResize } from '../engine/resize.js';
+import { createPlayerState } from '../player/physics/state.js';
+import { createLoop } from '../engine/loop.js';
+import { setupKeyboardInput } from '../player/input/keyboard.js';
+import { DEFAULT_GROUND_TOLERANCE } from '../player/physics/constants.js';
+import { createCollisionSystem } from '../player/physics/collision.js';
+import { updatePlayer } from '../player/physics/update.js';
 import { createDevMode } from '../dev/mode.js';
 
 export function createGame({ renderer, assets = {} } = {}) {
@@ -30,7 +30,7 @@ export function createGame({ renderer, assets = {} } = {}) {
   let cleanupKeyboard = null;
 
   // Populate level/environment geometry
-  addEnvironment(scene);
+  addEnvironment(scene, assets);
 
   // Example usage of loaded assets (if provided):
   // if (assets.models?.world) scene.add(assets.models.world.scene);
