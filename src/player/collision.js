@@ -45,7 +45,21 @@ function buildCollisionGeometry(root) {
     }
   });
   if (geometries.length === 0) return null;
-  const merged = mergeGeometries(geometries, false);
+  // Normalize: ensure identical attribute layout across all geometries
+  // - Convert to non-indexed
+  // - Keep only 'position' attribute (collision does not need normals/uvs)
+  const prepared = geometries.map((geom) => {
+    const nonIndexed = geom.index ? geom.toNonIndexed() : geom;
+    const positionAttr = nonIndexed.getAttribute('position');
+    const clean = new THREE.BufferGeometry();
+    clean.setAttribute('position', positionAttr.clone());
+    return clean;
+  });
+  const merged = mergeGeometries(prepared, false);
+  if (!merged) {
+    console.warn('Collision merge failed: incompatible geometry attributes');
+    return null;
+  }
   merged.computeBoundsTree();
   return merged;
 }
@@ -56,6 +70,11 @@ const TEMP_capPoint = new THREE.Vector3();
 const TEMP_sphere = new THREE.Sphere();
 const TEMP_triNormal = new THREE.Vector3();
 const UP = new THREE.Vector3(0, 1, 0);
+// Treat only almost-flat faces as true ground when filtering during horizontal checks.
+// A higher threshold prevents medium slopes from being ignored, which previously
+// allowed the capsule to "zajet" do šikmých ploch při XZ pohybu.
+const GROUND_DOT_THRESHOLD = 0.95; // ~18° od osy Y
+const WALL_DOT_THRESHOLD = 0.25;   // ~75° od osy Y (skutečně téměř svislé plochy)
 
 
 
@@ -99,12 +118,12 @@ export function createCollisionSystem(root, groundTolerance) {
         if (ignoreGroundTriangles || ignoreWallTriangles) {
           tri.getNormal(TEMP_triNormal);
           const alignmentWithUp = TEMP_triNormal.dot(UP);
-          // Threshold ~0.8 (~36.9° from up)
-          if (ignoreGroundTriangles && alignmentWithUp > 0.8) {
+          // Use stricter threshold for ground-like surfaces to avoid ignoring sloped surfaces
+          if (ignoreGroundTriangles && alignmentWithUp > GROUND_DOT_THRESHOLD) {
             // Skip ground-like faces when we're interested in walls
             return false;
           }
-          if (ignoreWallTriangles && Math.abs(alignmentWithUp) <= 0.8) {
+          if (ignoreWallTriangles && Math.abs(alignmentWithUp) <= WALL_DOT_THRESHOLD) {
             // Skip near-vertical faces when we only care about ground/ceiling
             return false;
           }
@@ -151,10 +170,10 @@ export function createCollisionSystem(root, groundTolerance) {
         if (ignoreGroundTriangles || ignoreWallTriangles) {
           tri.getNormal(TEMP_triNormal);
           const alignmentWithUp = TEMP_triNormal.dot(UP);
-          if (ignoreGroundTriangles && alignmentWithUp > 0.8) {
+          if (ignoreGroundTriangles && alignmentWithUp > GROUND_DOT_THRESHOLD) {
             return false;
           }
-          if (ignoreWallTriangles && Math.abs(alignmentWithUp) <= 0.8) {
+          if (ignoreWallTriangles && Math.abs(alignmentWithUp) <= WALL_DOT_THRESHOLD) {
             return false;
           }
         }
