@@ -64,11 +64,11 @@ export function createDevMode({
   const devMove = { fwd: false, back: false, left: false, right: false };
 
   let capsuleMesh = null;
-  function ensureCapsuleMesh() {
-    if (capsuleMesh) return capsuleMesh;
-    // Build a simple wireframe capsule from primitives reflecting player height/radius
-    const r = state.radius;
-    const h = state.normalHeight - 2 * r;
+  let capsuleHeightCached = null;
+
+  function createWireCapsuleGeometry(height, radius) {
+    const r = radius;
+    const h = Math.max(0, height - 2 * r);
     const top = new THREE.SphereGeometry(r, 16, 12);
     const bottom = new THREE.SphereGeometry(r, 16, 12);
     const cyl = new THREE.CylinderGeometry(r, r, Math.max(0.001, h), 16, 1, true);
@@ -78,17 +78,31 @@ export function createDevMode({
     top.dispose();
     bottom.dispose();
     cyl.dispose();
+    return merged;
+  }
+
+  function ensureCapsuleMesh(height) {
+    if (capsuleMesh) return capsuleMesh;
+    const geom = createWireCapsuleGeometry(height, state.radius);
     const mat = new THREE.MeshBasicMaterial({ color: 0x00d4ff, wireframe: true, transparent: true, opacity: 0.9 });
-    capsuleMesh = new THREE.Mesh(merged, mat);
+    capsuleMesh = new THREE.Mesh(geom, mat);
     capsuleMesh.visible = false;
+    capsuleHeightCached = height;
     scene.add(capsuleMesh);
     return capsuleMesh;
   }
 
   function updateCapsuleFromPlayer() {
-    if (!capsuleMesh) return;
     const obj = baseControls.getObject();
     const targetHeight = state.isCrouching ? state.crouchHeight : state.normalHeight;
+    ensureCapsuleMesh(targetHeight);
+    if (Math.abs((capsuleHeightCached ?? 0) - targetHeight) > 1e-6) {
+      // Rebuild geometry to match current player height (handles crouch/stand)
+      const newGeom = createWireCapsuleGeometry(targetHeight, state.radius);
+      capsuleMesh.geometry?.dispose?.();
+      capsuleMesh.geometry = newGeom;
+      capsuleHeightCached = targetHeight;
+    }
     const y = obj.position.y - targetHeight * 0.5;
     capsuleMesh.position.set(obj.position.x, y, obj.position.z);
     capsuleMesh.rotation.set(0, 0, 0);
@@ -101,7 +115,8 @@ export function createDevMode({
     if (baseControls.isLocked) baseControls.unlock();
     if (overlay) overlay.style.display = 'none';
     devPanel.style.display = 'block';
-    ensureCapsuleMesh();
+    const targetHeight = state.isCrouching ? state.crouchHeight : state.normalHeight;
+    ensureCapsuleMesh(targetHeight);
     capsuleMesh.visible = true;
     ensureCameraHelper();
     cameraHelper.visible = true;
