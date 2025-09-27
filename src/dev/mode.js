@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { createFPSControls } from '../player/controls.js';
 import { createCamera } from '../player/camera.js';
 
@@ -101,16 +100,11 @@ export function createDevMode({
   function createWireCapsuleGeometry(height, radius) {
     const r = radius;
     const h = Math.max(0, height - 2 * r);
-    const top = new THREE.SphereGeometry(r, 16, 12);
-    const bottom = new THREE.SphereGeometry(r, 16, 12);
-    const cyl = new THREE.CylinderGeometry(r, r, Math.max(0.001, h), 16, 1, true);
-    top.translate(0, h * 0.5, 0);
-    bottom.translate(0, -h * 0.5, 0);
-    const merged = mergeGeometries([top, cyl, bottom], false);
-    top.dispose();
-    bottom.dispose();
-    cyl.dispose();
-    return merged;
+
+    // length=h is the cylindrical part; total height = h + 2r
+    const radialSegments = 16;
+    const capSegments = 12;
+    return new THREE.CapsuleGeometry(r, Math.max(0.001, h), capSegments, radialSegments);
   }
 
   function ensureCapsuleMesh(height) {
