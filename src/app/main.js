@@ -3,7 +3,7 @@ import { createRenderer } from '../core/renderer.js';
 import { createScene } from '../core/scene.js';
 import { createCamera } from '../player/camera.js';
 import { createFPSControls } from '../player/controls.js';
-import { createPointerLockOverlay, createCrosshair } from '../player/overlay.js';
+import { createPointerLockOverlay, createCrosshair, createFPSMeter } from '../player/overlay.js';
 import { addEnvironment } from '../objects/environment.js';
 import { setupResize } from '../systems/resize.js';
 import { createPlayerState } from '../player/state.js';
@@ -25,6 +25,7 @@ scene.add(controls.getObject());
 addEnvironment(scene);
 createPointerLockOverlay(controls);
 createCrosshair(controls);
+const fps = createFPSMeter();
 setupResize({ renderer, camera });
 
 const state = createPlayerState();
@@ -44,6 +45,7 @@ const loop = createLoop({
   camera,
   update: (delta) => {
     updatePlayer({ state, controls, isCollidingAtPosition, delta });
+    fps.tick();
   }
 });
 

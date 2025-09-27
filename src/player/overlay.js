@@ -61,3 +61,60 @@ export function createCrosshair(controls) {
   document.body.appendChild(crosshair);
   return crosshair;
 }
+
+/**
+ * Creates a lightweight on-screen FPS meter.
+ *
+ * The meter renders as a small fixed element in the top-left corner and
+ * exposes a `tick()` method that should be called once per rendered frame.
+ * It uses a smoothed instantaneous FPS (EMA) and throttles DOM updates to
+ * at most 4 times per second to reduce layout work.
+ */
+export function createFPSMeter() {
+  const fpsEl = document.createElement('div');
+  fpsEl.style.position = 'fixed';
+  fpsEl.style.left = '10px';
+  fpsEl.style.top = '10px';
+  fpsEl.style.padding = '4px 8px';
+  fpsEl.style.borderRadius = '6px';
+  fpsEl.style.background = 'rgba(0, 0, 0, 0.35)';
+  fpsEl.style.color = '#e6edf3';
+  fpsEl.style.fontSize = '12px';
+  fpsEl.style.fontFamily = 'ui-monospace, SFMono-Regular, Menlo, Consolas, Monaco, Liberation Mono, monospace';
+  fpsEl.style.lineHeight = '1';
+  fpsEl.style.userSelect = 'none';
+  fpsEl.style.pointerEvents = 'none';
+  fpsEl.style.zIndex = '20';
+  fpsEl.textContent = 'FPS: --';
+
+  document.body.appendChild(fpsEl);
+
+  let lastFrameTimeMs = performance.now();
+  let lastDomUpdateMs = lastFrameTimeMs;
+  let smoothedFps = 0;
+  const smoothingFactor = 0.12; // EMA smoothing factor
+
+  function tick() {
+    const now = performance.now();
+    const deltaMs = now - lastFrameTimeMs;
+    lastFrameTimeMs = now;
+    const currentFps = deltaMs > 0 ? 1000 / deltaMs : 0;
+
+    if (smoothedFps === 0) {
+      smoothedFps = currentFps;
+    } else {
+      smoothedFps += (currentFps - smoothedFps) * smoothingFactor;
+    }
+
+    if (now - lastDomUpdateMs >= 250) {
+      fpsEl.textContent = `FPS: ${Math.round(smoothedFps)}`;
+      lastDomUpdateMs = now;
+    }
+  }
+
+  function destroy() {
+    fpsEl.remove();
+  }
+
+  return { tick, destroy, el: fpsEl };
+}
