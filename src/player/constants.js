@@ -21,3 +21,6 @@ export const DEFAULT_GROUND_TOLERANCE = 0.025;
 // Input behavior
 // When true, crouch acts as toggle (press once to crouch/stand) instead of hold-to-crouch
 export const CROUCH_TOGGLE = true;
+
+// Extra headroom required to allow standing up (in meters). Helps avoid getting stuck under low ceilings.
+export const STAND_HEADROOM = 0.02;

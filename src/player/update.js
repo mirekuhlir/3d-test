@@ -13,7 +13,7 @@
 //   delta                          // seconds since last frame
 // })
 import * as THREE from 'three';
-import { STEP_MAX_HEIGHT } from './constants.js';
+import { STEP_MAX_HEIGHT, STAND_HEADROOM } from './constants.js';
 
 // Temp vectors to avoid allocations each frame
 const TMP_FORWARD = new THREE.Vector3();
@@ -45,7 +45,32 @@ export function updatePlayer({ state, controls, isCollidingAtPosition, getCollis
   state.direction.x = Number(state.moveRight) - Number(state.moveLeft);
   state.direction.normalize();
 
-  // Choose capsule height based on crouch
+  // Acquire player object once per frame (camera holder / capsule center)
+  const obj = controls.getObject();
+
+  // Prevent standing up into an obstacle:
+  // Our capsule is defined so that its TOP is at obj.position.y.
+  // To check head clearance, we probe by lifting the capsule upward by the amount
+  // needed to reach standing head height + a small safety margin. We keep the
+  // capsule compact (crouch height) to focus on headroom and ignore near-horizontal
+  // triangles (floors). This prevents false positives from the ground.
+  if (!state.isCrouching) {
+    const desiredHeadY = state.normalHeight + STAND_HEADROOM;
+    const lift = Math.max(0, desiredHeadY - obj.position.y);
+    if (lift > 0) {
+      const blockedStand = isCollidingAtPosition(
+        obj.position,
+        state.crouchHeight, // compact probe capsule, we only care about headroom
+        state.radius,
+        { yLift: lift, ignoreGroundTriangles: true, ignoreGround: true }
+      );
+      if (blockedStand) {
+        state.isCrouching = true;
+      }
+    }
+  }
+
+  // Choose collision capsule height based on (potentially adjusted) crouch state
   const targetHeight = state.isCrouching ? state.crouchHeight : state.normalHeight;
   if (controls.isLocked) {
     // Allow horizontal acceleration if grounded or air-control is enabled
@@ -55,7 +80,6 @@ export function updatePlayer({ state, controls, isCollidingAtPosition, getCollis
       state.velocity.x -= state.direction.x * state.moveAccel * delta;
     }
 
-    const obj = controls.getObject();
     const moveX = -state.velocity.x * delta;
     const moveZ = -state.velocity.z * delta;
 
@@ -201,7 +225,7 @@ export function updatePlayer({ state, controls, isCollidingAtPosition, getCollis
   }
 
   // Vertical movement and floor/box collision
-  const obj = controls.getObject();
+  // Reuse the same `obj` acquired earlier for consistency
   const vyBefore = state.velocity.y; // remember sign to detect landing
   obj.position.y += state.velocity.y * delta;
   // Block vertical movement if colliding with boxes
