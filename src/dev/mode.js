@@ -25,7 +25,18 @@ export function createDevMode({
   const devCamera = createCamera();
   devCamera.position.set(0, 5, 8);
   devCamera.lookAt(0, 1.6, 0);
-  const devControls = createFPSControls(devCamera, renderer.domElement);
+
+  // Use a dedicated overlay element for dev pointer lock so base controls never lock with it
+  const devPointerEl = document.createElement('div');
+  devPointerEl.style.position = 'fixed';
+  devPointerEl.style.inset = '0';
+  devPointerEl.style.zIndex = '30'; // above gameplay overlay/crosshair, below dev panel
+  devPointerEl.style.background = 'transparent';
+  devPointerEl.style.display = 'none';
+  devPointerEl.style.cursor = 'crosshair';
+  document.body.appendChild(devPointerEl);
+
+  const devControls = createFPSControls(devCamera, devPointerEl);
   
   // Sync dev camera/controls from base camera/controls
   function syncDevCameraFromBase() {
@@ -136,6 +147,7 @@ export function createDevMode({
     if (baseControls.isLocked) baseControls.unlock();
     if (overlay) overlay.style.display = 'none';
     devPanel.style.display = 'block';
+    devPointerEl.style.display = 'block';
     // Place dev camera at player's current position/orientation
     syncDevCameraFromBase();
     const targetHeight = state.isCrouching ? state.crouchHeight : state.normalHeight;
@@ -153,6 +165,7 @@ export function createDevMode({
     if (!isActive) return;
     isActive = false;
     devPanel.style.display = 'none';
+    devPointerEl.style.display = 'none';
     if (overlay) overlay.style.display = 'flex';
     if (capsuleMesh) capsuleMesh.visible = false;
     if (cameraHelper) cameraHelper.visible = false;
@@ -188,10 +201,15 @@ export function createDevMode({
   window.addEventListener('keydown', onKeyDownDevMove);
   window.addEventListener('keyup', onKeyUpDevMove);
   btnExitDev?.addEventListener('click', exit);
+  // Clicking the dev overlay re-locks dev controls while active
+  devPointerEl.addEventListener('click', () => {
+    if (isActive && !devControls.isLocked) devControls.lock();
+  });
 
   function handleCanvasClick() {
     // When active: clicking (re)locks the dev controls, otherwise gameplay controls
     if (isActive) {
+      // dev overlay is on top and handles locking itself
       if (!devControls.isLocked) devControls.lock();
     } else {
       if (!baseControls.isLocked) baseControls.lock();
@@ -254,6 +272,8 @@ export function createDevMode({
     window.removeEventListener('keydown', onKeyDownDevMove);
     window.removeEventListener('keyup', onKeyUpDevMove);
     btnExitDev?.removeEventListener?.('click', exit);
+    devPointerEl?.removeEventListener?.('click', () => {});
+    devPointerEl.remove();
     devPanel.remove();
     if (capsuleMesh) {
       capsuleMesh.geometry?.dispose?.();
