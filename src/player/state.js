@@ -31,6 +31,16 @@ export function createPlayerState() {
     // in the same place while the capsule top position changes)
     currentHeight: PLAYER_NORMAL_HEIGHT,
 
+    // Smooth height transition control
+    // We animate from currentHeight towards targetHeight with a given duration
+    heightTransition: {
+      isActive: false,
+      startHeight: PLAYER_NORMAL_HEIGHT,
+      targetHeight: PLAYER_NORMAL_HEIGHT,
+      elapsed: 0,
+      duration: 0
+    },
+
     gravity: GRAVITY,
     moveAccel: MOVE_ACCEL,
     damping: DAMPING,

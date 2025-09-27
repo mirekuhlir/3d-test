@@ -13,7 +13,7 @@
 //   delta                          // seconds since last frame
 // })
 import * as THREE from 'three';
-import { STEP_MAX_HEIGHT, STAND_HEADROOM } from './constants.js';
+import { STEP_MAX_HEIGHT, STAND_HEADROOM, CROUCH_DURATION, STAND_DURATION } from './constants.js';
 
 // Temp vectors to avoid allocations each frame
 const TMP_FORWARD = new THREE.Vector3();
@@ -48,34 +48,60 @@ export function updatePlayer({ state, controls, isCollidingAtPosition, getCollis
   // Acquire player object once per frame (camera holder / capsule center)
   const obj = controls.getObject();
 
-  // Handle height changes (crouch/stand) while keeping feet anchored.
+  // Smooth height changes (crouch/stand) with feet anchored.
   // Our capsule's TOP is at obj.position.y; bottom is obj.position.y - height.
-  // When the desired height changes, shift obj.position.y by the delta so that
-  // the bottom remains at the same world Y. Before growing, verify headroom.
-  let desiredHeight = state.isCrouching ? state.crouchHeight : state.normalHeight;
-  if (Math.abs(desiredHeight - state.currentHeight) > 1e-6) {
-    const deltaH = desiredHeight - state.currentHeight;
-    if (deltaH > 0) {
-      // Attempt to stand up: check clearance above the head
-      const clearance = deltaH + STAND_HEADROOM;
+  // We animate currentHeight -> desiredHeight over time, moving the top by the
+  // incremental delta each frame so feet stay fixed. Before growing, verify headroom.
+  const desiredHeight = state.isCrouching ? state.crouchHeight : state.normalHeight;
+  const ht = state.heightTransition;
+  const EPS = 1e-6;
+
+  // If target changed or we're idle but not at target, (re)start transition
+  if ((!ht.isActive && Math.abs(desiredHeight - state.currentHeight) > EPS) ||
+      (ht.isActive && Math.abs(desiredHeight - ht.targetHeight) > EPS)) {
+    const fromHeight = state.currentHeight;
+    const toHeight = desiredHeight;
+    if (toHeight > fromHeight) {
+      // Standing up: check clearance for the full extend plus headroom
+      const clearance = (toHeight - fromHeight) + STAND_HEADROOM;
       const blocked = isCollidingAtPosition(
         obj.position,
-        state.crouchHeight,
+        fromHeight,
         state.radius,
         { yLift: clearance, ignoreGroundTriangles: true, ignoreGround: true }
       );
       if (blocked) {
-        // Stay crouched if there isn't enough space
-        desiredHeight = state.currentHeight;
+        // Not enough space — remain crouched
         state.isCrouching = true;
       } else {
-        obj.position.y += deltaH; // keep feet fixed
-        state.currentHeight = desiredHeight;
+        ht.isActive = true;
+        ht.startHeight = fromHeight;
+        ht.targetHeight = toHeight;
+        ht.elapsed = 0;
+        ht.duration = STAND_DURATION;
       }
     } else {
-      // Shrinking (crouch) — always allowed; move top down to keep feet fixed
-      obj.position.y += deltaH;
-      state.currentHeight = desiredHeight;
+      // Crouching down: always allowed
+      ht.isActive = true;
+      ht.startHeight = fromHeight;
+      ht.targetHeight = toHeight;
+      ht.elapsed = 0;
+      ht.duration = CROUCH_DURATION;
+    }
+  }
+
+  // Step the active transition
+  if (ht.isActive) {
+    const prevHeight = state.currentHeight;
+    ht.elapsed += delta;
+    const t = Math.min(1, Math.max(0, ht.elapsed / Math.max(EPS, ht.duration)));
+    const newHeight = ht.startHeight + (ht.targetHeight - ht.startHeight) * t;
+    // Move top to keep feet fixed
+    obj.position.y += (newHeight - prevHeight);
+    state.currentHeight = newHeight;
+    if (t >= 1 - EPS) {
+      ht.isActive = false;
+      state.currentHeight = ht.targetHeight;
     }
   }
 
