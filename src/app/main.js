@@ -23,13 +23,21 @@ const menu = createMenu({
 
 menu.start();
 
+// Auto-discover assets with Vite's glob import.
+// Place files under `src/assets/models` and `src/assets/textures`.
+const textureModules = import.meta.glob('../assets/textures/**/*.{jpg,jpeg,png,webp}', { eager: true, as: 'url' });
+const modelModules = import.meta.glob('../assets/models/**/*.{glb,gltf}', { eager: true, as: 'url' });
+
+function toPlan(globResult) {
+  return Object.entries(globResult).map(([path, url]) => {
+    const name = path.split('/').pop().replace(/\.[^.]+$/, '');
+    return { name, url };
+  });
+}
+
 const assetsPlan = {
-  models: [
-    // { name: 'world', url: '/models/world.glb' },
-  ],
-  textures: [
-    // { name: 'albedo', url: '/textures/ground_albedo.jpg' },
-  ]
+  models: toPlan(modelModules),
+  textures: toPlan(textureModules),
 };
 
 preloadAssets(assetsPlan, (progress) => {
