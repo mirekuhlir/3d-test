@@ -13,7 +13,7 @@
 //   delta                          // seconds since last frame
 // })
 import * as THREE from 'three';
-import { STEP_MAX_HEIGHT, STAND_HEADROOM, CROUCH_DURATION, STAND_DURATION, COYOTE_TIME, JUMP_BUFFER_TIME } from './constants.js';
+import { STEP_MAX_HEIGHT, STAND_HEADROOM, CROUCH_DURATION, STAND_DURATION, COYOTE_TIME, JUMP_BUFFER_TIME, CROUCH_SPEED_MULTIPLIER } from './constants.js';
 
 // Temp vectors to avoid allocations each frame
 const TMP_FORWARD = new THREE.Vector3();
@@ -164,8 +164,10 @@ export function updatePlayer({ state, controls, isCollidingAtPosition, getCollis
     // Allow horizontal acceleration if grounded or air-control is enabled
     const allowAirAccel = state.canJump || state.airControlEnabled;
     if (allowAirAccel && state.direction.lengthSq() > 0) {
-      state.velocity.z -= state.direction.z * state.moveAccel * delta;
-      state.velocity.x -= state.direction.x * state.moveAccel * delta;
+      // Apply crouch speed modifier when player is crouching
+      const effectiveAccel = state.isCrouching ? state.moveAccel * CROUCH_SPEED_MULTIPLIER : state.moveAccel;
+      state.velocity.z -= state.direction.z * effectiveAccel * delta;
+      state.velocity.x -= state.direction.x * effectiveAccel * delta;
     }
 
     const moveX = -state.velocity.x * delta;

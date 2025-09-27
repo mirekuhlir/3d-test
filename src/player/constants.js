@@ -27,6 +27,9 @@ export const CROUCH_TOGGLE = true;
 // Extra headroom required to allow standing up (in meters). Helps avoid getting stuck under low ceilings.
 export const STAND_HEADROOM = 0.02;
 
+// Movement speed when crouching (multiplier for normal speed)
+export const CROUCH_SPEED_MULTIPLIER = 0.3;
+
 // Crouch/stand transition durations (seconds)
 // Controls how long it takes to smoothly change the capsule height
 export const CROUCH_DURATION = 0.3; // 300ms to crouch down
