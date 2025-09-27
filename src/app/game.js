@@ -9,7 +9,7 @@ import { setupResize } from '../systems/resize.js';
 import { createPlayerState } from '../player/state.js';
 import { createLoop } from '../core/loop.js';
 import { setupKeyboardInput } from '../player/keyboard.js';
-import { getGroundTolerance } from '../player/config.js';
+import { DEFAULT_GROUND_TOLERANCE } from '../player/constants.js';
 import { createCollisionSystem } from '../player/collision.js';
 import { updatePlayer } from '../player/update.js';
 import { createDevMode } from '../dev/mode.js';
@@ -34,8 +34,7 @@ export function createGame({ renderer, assets = {} } = {}) {
   const cleanupResize = setupResize({ renderer, camera });
 
   const state = createPlayerState();
-  const GROUND_TOLERANCE = getGroundTolerance();
-  const { isCollidingAtPosition, getCollisionAtPosition } = createCollisionSystem(scene, GROUND_TOLERANCE);
+  const { isCollidingAtPosition, getCollisionAtPosition } = createCollisionSystem(scene,DEFAULT_GROUND_TOLERANCE );
 
   // Initialize dev mode
   const devMode = createDevMode({

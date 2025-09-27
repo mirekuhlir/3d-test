@@ -9,3 +9,7 @@ export const PLAYER_RADIUS = 0.35;
 
 // Maximum height the player can automatically "step up" when colliding with a low ledge
 export const STEP_MAX_HEIGHT = 0.35;
+
+// Ground tolerance configuration for collision handling
+// These values help prevent minor sticking on the ground during horizontal checks.
+export const DEFAULT_GROUND_TOLERANCE = 0.025;

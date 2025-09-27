@@ -132,4 +132,3 @@ export function createCollisionSystem(root, groundTolerance) {
 
   return { isCollidingAtPosition, getCollisionAtPosition, collisionGeometry };
 }
-
