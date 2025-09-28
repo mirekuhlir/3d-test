@@ -7,7 +7,7 @@ import * as THREE from 'three';
 
 export function addGround(scene) {
   const groundMaterial = new THREE.MeshStandardMaterial({
-    color: 0x343a40,
+    color: 0x6f7379,
     roughness: 0.95,
     metalness: 0,
   });
@@ -16,7 +16,14 @@ export function addGround(scene) {
   ground.position.y = 0;
   ground.receiveShadow = false;
 
-  const grid = new THREE.GridHelper(200, 200, 0x444444, 0x222222);
+  const grid = new THREE.GridHelper(200, 200, 0xffffff, 0xb0b0b0);
+  grid.position.y = 0.01;
+
+  const gridMaterials = Array.isArray(grid.material) ? grid.material : [grid.material];
+  gridMaterials.forEach((material) => {
+    material.depthWrite = false;
+    material.depthTest = false;
+  });
 
   scene.add(ground, grid);
 
