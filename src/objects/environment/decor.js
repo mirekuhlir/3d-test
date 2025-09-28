@@ -5,7 +5,7 @@
 // collision extraction if required.
 import * as THREE from 'three';
 
-const PALETTE = [0x4cc9f0, 0xf72585, 0xb5179e, 0x4895ef, 0x4361ee, 0x2ec4b6, 0xffbe0b];
+const PALETTE = [0xcccccc, 0x777777, 0x666666, 0xff8c00, 0xff0000];
 
 const CLUSTER_CONFIGS = [
   {
