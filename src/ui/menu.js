@@ -19,67 +19,116 @@ function createMenuOverlay(onPlay) {
   root.style.justifyContent = 'center';
   root.style.flexDirection = 'column';
   root.style.gap = '16px';
-  root.style.background = 'linear-gradient(180deg, rgba(11,16,32,0.55), rgba(11,16,32,0.75))';
+  root.style.background = 'linear-gradient(180deg, rgba(25, 25, 25, 0.9), rgba(15, 15, 15, 0.95))';
   root.style.backdropFilter = 'blur(2px)';
   root.style.color = '#e6edf3';
   root.style.fontFamily = 'system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif';
   root.style.userSelect = 'none';
   root.style.zIndex = '30';
 
-  const title = document.createElement('div');
-  title.textContent = 'Main Menu';
-  title.style.fontSize = '28px';
-  title.style.fontWeight = '700';
 
-  // Progress bar + text status
-  const progressWrap = document.createElement('div');
-  progressWrap.style.width = '320px';
-  progressWrap.style.height = '10px';
-  progressWrap.style.borderRadius = '6px';
-  progressWrap.style.background = 'rgba(255,255,255,0.18)';
-  const progressBar = document.createElement('div');
-  progressBar.style.height = '100%';
-  progressBar.style.width = '0%';
-  progressBar.style.borderRadius = '6px';
-  progressBar.style.background = 'linear-gradient(90deg, #00d4ff, #6a5af9)';
-  progressWrap.appendChild(progressBar);
+  // Geometric shapes animation
+  for (let i = 0; i < 15; i++) {
+    const shape = document.createElement('div');
+    const shapes = ['square', 'circle', 'triangle', 'diamond'];
+    const shapeType = shapes[i % shapes.length];
 
-  const progressText = document.createElement('div');
-  progressText.textContent = 'Loading… 0%';
-  progressText.style.opacity = '0.9';
+    shape.style.position = 'absolute';
+    shape.style.width = `${25 + Math.random() * 50}px`;
+    shape.style.height = `${25 + Math.random() * 50}px`;
+    shape.style.left = `${Math.random() * 100}%`;
+    shape.style.top = `${Math.random() * 100}%`;
+    shape.style.background = `rgba(100, 116, 139, ${0.2 + Math.random() * 0.3})`;
+    shape.style.animation = `geometricFloat ${3 + Math.random() * 2}s ease-in-out infinite`;
+    shape.style.animationDelay = `${Math.random() * 1.5}s`;
 
-  // Play action. Initially disabled until preloading finishes
+    if (shapeType === 'circle') {
+      shape.style.borderRadius = '50%';
+    } else if (shapeType === 'triangle') {
+      shape.style.width = '0';
+      shape.style.height = '0';
+      shape.style.borderLeft = `${15 + Math.random() * 20}px solid transparent`;
+      shape.style.borderRight = `${15 + Math.random() * 20}px solid transparent`;
+      shape.style.borderBottom = `${25 + Math.random() * 30}px solid rgba(100, 116, 139, ${0.2 + Math.random() * 0.3})`;
+      shape.style.background = 'transparent';
+    } else if (shapeType === 'diamond') {
+      shape.style.transform = 'rotate(45deg)';
+      shape.style.borderRadius = '4px';
+    }
+
+    // Add keyframes for geometric animation
+    if (!document.getElementById('geometric-keyframes')) {
+      const style = document.createElement('style');
+      style.id = 'geometric-keyframes';
+      style.textContent = `
+        @keyframes geometricFloat {
+          0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.5; }
+          25% { transform: translateY(-20px) rotate(90deg); opacity: 0.8; }
+          50% { transform: translateY(10px) rotate(180deg); opacity: 0.6; }
+          75% { transform: translateY(-10px) rotate(270deg); opacity: 0.9; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    root.appendChild(shape);
+  }
+
+  // Play action. Initially disabled until preloading finishes, shows "Loading"
   const playBtn = document.createElement('button');
-  playBtn.textContent = 'Play';
-  playBtn.style.padding = '10px 20px';
-  playBtn.style.borderRadius = '8px';
+  playBtn.textContent = 'Loading';
+  playBtn.style.padding = '30px 60px';
+  playBtn.style.borderRadius = '16px';
   playBtn.style.border = 'none';
+  playBtn.style.fontSize = '32px';
   playBtn.style.fontWeight = '600';
-  playBtn.style.background = '#2ea043';
+  playBtn.style.background = '#4a5568';
   playBtn.style.color = '#fff';
   playBtn.style.cursor = 'not-allowed';
+  playBtn.style.transition = 'all 0.3s ease';
+  playBtn.style.transform = 'scale(1)';
   playBtn.disabled = true;
+
+  // Add hover effect styles
+  const addHoverEffect = () => {
+    if (!playBtn.disabled) {
+      playBtn.style.background = '#5a6578';
+      playBtn.style.transform = 'scale(1.05)';
+      playBtn.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.3)';
+    }
+  };
+
+  const removeHoverEffect = () => {
+    if (!playBtn.disabled) {
+      playBtn.style.background = '#4a5568';
+      playBtn.style.transform = 'scale(1)';
+      playBtn.style.boxShadow = 'none';
+    }
+  };
+
+  playBtn.addEventListener('mouseenter', addHoverEffect);
+  playBtn.addEventListener('mouseleave', removeHoverEffect);
 
   playBtn.addEventListener('click', () => {
     if (!playBtn.disabled) onPlay?.();
   });
 
-  root.appendChild(title);
-  root.appendChild(progressWrap);
-  root.appendChild(progressText);
   root.appendChild(playBtn);
   document.body.appendChild(root);
 
   return {
     setProgress(p) {
-      // Clamp and apply percent width + label
+      // When loading is complete, change button text to "Play"
       const pct = Math.round(Math.max(0, Math.min(1, p)) * 100);
-      progressBar.style.width = `${pct}%`;
-      progressText.textContent = pct >= 100 ? 'Ready' : `Loading… ${pct}%`;
+      if (pct >= 100) {
+        playBtn.textContent = 'Play';
+      }
     },
     enablePlay() {
       playBtn.disabled = false;
       playBtn.style.cursor = 'pointer';
+      playBtn.style.background = '#4a5568';
+      playBtn.textContent = 'Play';
     },
     destroy() {
       root.remove();
@@ -93,15 +142,10 @@ export function createMenu({ renderer, onPlay }) {
   const camera = createCamera();
   camera.position.set(0, 1.4, 3);
 
-  // Simple animated object to keep the menu lively
-  const mat = new THREE.MeshStandardMaterial({ color: 0x6a5af9, metalness: 0.2, roughness: 0.5 });
-  const geo = new THREE.TorusKnotGeometry(0.8, 0.25, 120, 16);
-  const mesh = new THREE.Mesh(geo, mat);
   scene.add(new THREE.AmbientLight(0xffffff, 0.6));
   const dir = new THREE.DirectionalLight(0xffffff, 0.9);
   dir.position.set(2, 3, 1.5);
   scene.add(dir);
-  scene.add(mesh);
 
   // Keep renderer/camera sized to the window while the menu is open
   const cleanupResize = setupResize({ renderer, camera });
@@ -113,9 +157,7 @@ export function createMenu({ renderer, onPlay }) {
     scene,
     camera,
     update: (delta) => {
-      // Gentle spin animation
-      mesh.rotation.x += delta * 0.4;
-      mesh.rotation.y += delta * 0.6;
+      // Menu background animation (placeholder for future animations)
     }
   });
 
@@ -128,8 +170,6 @@ export function createMenu({ renderer, onPlay }) {
       // Dispose both UI and 3D assets
       ui.destroy();
       cleanupResize();
-      geo.dispose();
-      mat.dispose();
     }
   };
 }
