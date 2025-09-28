@@ -73,7 +73,7 @@ const UP = new THREE.Vector3(0, 1, 0);
 // Treat only almost-flat faces as true ground when filtering during horizontal checks.
 // A higher threshold prevents medium slopes from being ignored, which previously
 // allowed the capsule to "zajet" do šikmých ploch při XZ pohybu.
-const GROUND_DOT_THRESHOLD = 0.95; // ~18° od osy Y
+const GROUND_DOT_THRESHOLD = 0.99; // ~8° od osy Y
 const WALL_DOT_THRESHOLD = 0.25;   // ~75° od osy Y (skutečně téměř svislé plochy)
 
 
