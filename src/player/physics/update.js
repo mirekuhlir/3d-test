@@ -43,6 +43,12 @@ export function updatePlayer({ state, controls, isCollidingAtPosition, getCollis
   // Movement input
   state.direction.z = Number(state.moveForward) - Number(state.moveBackward);
   state.direction.x = Number(state.moveRight) - Number(state.moveLeft);
+
+  if (state.direction.lengthSq() < 1e-6 && (state.touchMoveX || state.touchMoveY)) {
+    state.direction.x = state.touchMoveX;
+    state.direction.z = -state.touchMoveY;
+  }
+
   state.direction.normalize();
 
   // Acquire player object once per frame (camera holder / capsule center)

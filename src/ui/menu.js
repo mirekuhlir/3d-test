@@ -8,6 +8,8 @@ import { createScene } from '../engine/scene.js';
 import { createCamera } from '../player/view/camera.js';
 import { createLoop } from '../engine/loop.js';
 import { setupResize } from '../engine/resize.js';
+import { shouldUseMobileUI } from '../utils/device.js';
+import { ensureLandscapeOrientation } from '../utils/orientation.js';
 
 function createMenuOverlay(onPlay) {
   // Root overlay container
@@ -110,10 +112,51 @@ function createMenuOverlay(onPlay) {
   playBtn.addEventListener('mouseleave', removeHoverEffect);
 
   playBtn.addEventListener('click', () => {
-    if (!playBtn.disabled) onPlay?.();
+    if (playBtn.disabled) return;
+    const result = onPlay?.();
+    if (result && typeof result.then === 'function') {
+      result.catch(() => {});
+    }
   });
 
   root.appendChild(playBtn);
+
+  const controlsHint = document.createElement('div');
+  controlsHint.style.textAlign = 'center';
+  controlsHint.style.display = 'flex';
+  controlsHint.style.flexDirection = 'column';
+  controlsHint.style.alignItems = 'center';
+  controlsHint.style.gap = '8px';
+
+  const heading = document.createElement('div');
+  heading.style.fontSize = '22px';
+  heading.style.fontWeight = '600';
+  heading.style.marginBottom = '6px';
+  heading.textContent = 'Ready to ride?';
+  controlsHint.appendChild(heading);
+
+  const controlsText = document.createElement('div');
+  controlsText.style.opacity = '0.85';
+  controlsText.style.fontSize = '16px';
+
+  const showMobile = shouldUseMobileUI();
+  if (showMobile) {
+    controlsText.textContent = 'Left stick: move • Swipe right: look • Tap Jump / Crouch buttons';
+  } else {
+    controlsText.textContent = 'WASD: move • Space: jump/stand up • Ctrl/C: crouch';
+  }
+  controlsHint.appendChild(controlsText);
+
+  if (!showMobile) {
+    const mouseHint = document.createElement('div');
+    mouseHint.style.opacity = '0.7';
+    mouseHint.style.fontSize = '15px';
+    mouseHint.textContent = 'Click to lock mouse when the game starts.';
+    controlsHint.appendChild(mouseHint);
+  }
+
+  root.appendChild(controlsHint);
+
   document.body.appendChild(root);
 
   return {
@@ -132,7 +175,9 @@ function createMenuOverlay(onPlay) {
     },
     destroy() {
       root.remove();
-    }
+    },
+    getPlayButton: () => playBtn,
+    getRoot: () => root
   };
 }
 
@@ -150,7 +195,15 @@ export function createMenu({ renderer, onPlay }) {
   // Keep renderer/camera sized to the window while the menu is open
   const cleanupResize = setupResize({ renderer, camera });
 
-  const ui = createMenuOverlay(onPlay);
+  const ui = createMenuOverlay(() => {
+    if (shouldUseMobileUI()) {
+      ensureLandscapeOrientation({
+        fullscreenFallback: true,
+        fullscreenTarget: renderer?.domElement?.parentElement || document?.documentElement
+      }).catch(() => {});
+    }
+    return onPlay?.();
+  });
 
   const loop = createLoop({
     renderer,

@@ -17,6 +17,9 @@ import { DEFAULT_GROUND_TOLERANCE } from '../player/physics/constants.js';
 import { createCollisionSystem } from '../player/physics/collision.js';
 import { updatePlayer } from '../player/physics/update.js';
 import { createDevMode } from '../dev/mode.js';
+import { isMobileDevice } from '../utils/device.js';
+import { setupTouchInput } from '../player/input/touch.js';
+import { ensureLandscapeOrientation, setupAutoLandscapeOrientation } from '../utils/orientation.js';
 
 export function createGame({ renderer, assets = {} } = {}) {
   // World and camera
@@ -28,6 +31,9 @@ export function createGame({ renderer, assets = {} } = {}) {
   scene.add(controls.getObject());
 
   let cleanupKeyboard = null;
+  let cleanupTouch = null;
+
+  const usingMobileControls = isMobileDevice();
 
   // Populate level/environment geometry
   addEnvironment(scene, assets);
@@ -60,6 +66,7 @@ export function createGame({ renderer, assets = {} } = {}) {
   const crosshair = createCrosshair(controls);
   const fps = createFPSMeter();
   const cleanupResize = setupResize({ renderer, camera });
+  let cleanupAutoLandscape = null;
 
   // Set overlay reference in dev mode
   devMode.setOverlay(overlay);
@@ -68,8 +75,21 @@ export function createGame({ renderer, assets = {} } = {}) {
   const onCanvasClick = () => devMode.handleCanvasClick();
   renderer.domElement.addEventListener('click', onCanvasClick);
 
+  if (usingMobileControls) {
+    controls.lock = () => {};
+    controls.unlock = () => {};
+    controls.isLocked = true;
+    cleanupTouch = setupTouchInput(state, { camera, controls });
+    cleanupAutoLandscape = setupAutoLandscapeOrientation({
+      fullscreenFallback: true,
+      fullscreenTarget: renderer?.domElement?.parentElement || document?.documentElement
+    });
+  }
+
   // Gameplay key bindings (WASD, jump, crouch)
-  cleanupKeyboard = setupKeyboardInput(state);
+  if (!usingMobileControls) {
+    cleanupKeyboard = setupKeyboardInput(state);
+  }
 
   // Attach dev button to overlay
   devMode.attachDevButton(overlay);
@@ -92,7 +112,9 @@ export function createGame({ renderer, assets = {} } = {}) {
   function dispose() {
     // Full teardown for a clean restart
     loop.stop();
-    cleanupKeyboard();
+    cleanupKeyboard?.();
+    cleanupTouch?.();
+    cleanupAutoLandscape?.();
     renderer.domElement.removeEventListener('click', onCanvasClick);
     fps.destroy();
     overlay.remove();

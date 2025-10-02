@@ -59,6 +59,10 @@ export function createPlayerState() {
     // Jump snapshot info
     jumpDirX: 0,
     jumpDirZ: 0,
-    didJumpThisFrame: false
+    didJumpThisFrame: false,
+
+    // Touch input axes (normalized -1..1), used when mobile controls are active
+    touchMoveX: 0,
+    touchMoveY: 0
   };
 }

@@ -3,9 +3,11 @@
 // Responsibility: Create UI overlays layered over the canvas — a pointer-lock
 // prompt, a crosshair that shows only while locked, and a lightweight FPS meter.
 import { CROUCH_TOGGLE } from '../physics/constants.js';
+import { shouldUseMobileUI } from '../../utils/device.js';
 
 export function createPointerLockOverlay(controls, isDevModeActive = () => false) {
   const overlay = document.createElement('div');
+  let mobileOverlayDismissed = false;
   overlay.style.position = 'absolute';
   overlay.style.inset = '0';
   overlay.style.display = 'flex';
@@ -19,30 +21,70 @@ export function createPointerLockOverlay(controls, isDevModeActive = () => false
   overlay.style.fontFamily = 'system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif';
   overlay.style.userSelect = 'none';
   const crouchModeLabel = CROUCH_TOGGLE ? 'toggle' : 'hold';
+  const showMobile = shouldUseMobileUI();
   overlay.innerHTML = `
     <div style="text-align:center">
-      <div style="font-size:22px; font-weight:600; margin-bottom:6px;">Click to control with mouse</div>
-      <div style="opacity:0.85;">WASD: move • Space: jump/stand up • Ctrl/C: crouch (${crouchModeLabel})</div>
+      <div style="font-size:22px; font-weight:600; margin-bottom:6px;">${showMobile ? 'Touch controls enabled' : 'Click to control with mouse'}</div>
+      <div style="opacity:0.85;">
+        ${showMobile
+          ? 'Left joystick: move • Swipe right: look • Tap Jump / Crouch buttons'
+          : `WASD: move • Space: jump/stand up • Ctrl/C: crouch (${crouchModeLabel})`}
+      </div>
     </div>
   `;
-  overlay.style.cursor = 'pointer';
+  overlay.style.cursor = showMobile ? 'default' : 'pointer';
   overlay.style.zIndex = '10';
 
-  overlay.addEventListener('click', () => {
-    if (!controls.isLocked) controls.lock();
-  });
+  const hideOverlay = () => {
+    overlay.style.display = 'none';
+  };
+
+  const showOverlay = () => {
+    overlay.style.display = 'flex';
+  };
+
+  if (!showMobile) {
+    overlay.addEventListener('click', () => {
+      if (!controls.isLocked) controls.lock();
+    });
+  }
 
   controls.addEventListener('lock', () => {
-    overlay.style.display = 'none';
+    if (!showMobile) hideOverlay();
   });
   controls.addEventListener('unlock', () => {
-    // Don't show overlay in dev mode
     if (isDevModeActive()) {
-      overlay.style.display = 'none';
+      hideOverlay();
     } else {
-      overlay.style.display = 'flex';
+      if (!showMobile || !mobileOverlayDismissed) {
+        showOverlay();
+      }
     }
   });
+
+  if (showMobile) {
+    overlay.style.display = 'flex';
+
+    const handleFirstMobileInteraction = () => {
+      if (mobileOverlayDismissed) return;
+      mobileOverlayDismissed = true;
+      hideOverlay();
+      overlay.removeEventListener('click', handleFirstMobileInteraction);
+      overlay.removeEventListener('touchstart', handleFirstMobileInteraction);
+      overlay.removeEventListener('pointerdown', handleFirstMobileInteraction);
+      window.removeEventListener('touchstart', handleFirstMobileInteraction);
+      window.removeEventListener('pointerdown', handleFirstMobileInteraction);
+      window.removeEventListener('mousedown', handleFirstMobileInteraction);
+    };
+
+    overlay.addEventListener('click', handleFirstMobileInteraction);
+    overlay.addEventListener('touchstart', handleFirstMobileInteraction, { passive: true });
+    overlay.addEventListener('pointerdown', handleFirstMobileInteraction);
+
+    window.addEventListener('touchstart', handleFirstMobileInteraction, { passive: true });
+    window.addEventListener('pointerdown', handleFirstMobileInteraction);
+    window.addEventListener('mousedown', handleFirstMobileInteraction);
+  }
 
   document.body.appendChild(overlay);
   return overlay;
@@ -63,12 +105,20 @@ export function createCrosshair(controls) {
   crosshair.style.zIndex = '5';
   crosshair.style.display = 'none';
 
-  controls.addEventListener('lock', () => {
-    crosshair.style.display = 'block';
-  });
-  controls.addEventListener('unlock', () => {
+  const showMobile = shouldUseMobileUI();
+
+  if (!showMobile) {
+    controls.addEventListener('lock', () => {
+      crosshair.style.display = 'block';
+    });
+    controls.addEventListener('unlock', () => {
+      crosshair.style.display = 'none';
+    });
+  }
+
+  if (showMobile) {
     crosshair.style.display = 'none';
-  });
+  }
 
   document.body.appendChild(crosshair);
   return crosshair;
